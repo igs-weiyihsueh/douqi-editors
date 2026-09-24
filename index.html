@@ -1,269 +1,36 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>鬥氣割草 編輯器套件</title>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>鬥氣割草</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #fff;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
-
-        .header h1 {
-            font-size: 3rem;
-            margin-bottom: 0.5rem;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .header .subtitle {
-            font-size: 1.2rem;
-            opacity: 0.9;
-        }
-
-        .editors-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 2rem;
-            margin-bottom: 3rem;
-        }
-
-        .editor-card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 2rem;
-            text-align: center;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .editor-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-        }
-
-        .editor-icon {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-            display: block;
-        }
-
-        .editor-card h2 {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .editor-card .description {
-            margin-bottom: 1.5rem;
-            opacity: 0.9;
-            line-height: 1.6;
-        }
-
-        .launch-btn {
-            display: inline-block;
-            padding: 12px 30px;
-            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
-            color: white;
-            text-decoration: none;
-            border-radius: 25px;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-
-        .launch-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-        }
-
-        .features {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .features h3 {
-            text-align: center;
-            margin-bottom: 1.5rem;
-            font-size: 1.8rem;
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
-        }
-
-        .feature-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .feature-item .icon {
-            font-size: 1.2rem;
-        }
-
-        .links {
-            text-align: center;
-        }
-
-        .links a {
-            display: inline-block;
-            margin: 0 10px;
-            color: #fff;
-            text-decoration: none;
-            padding: 8px 16px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 20px;
-            transition: all 0.3s ease;
-        }
-
-        .links a:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .footer {
-            text-align: center;
-            margin-top: 2rem;
-            opacity: 0.7;
-            font-size: 0.9rem;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 1rem;
-            }
-            
-            .header h1 {
-                font-size: 2rem;
-            }
-            
-            .editors-grid {
-                grid-template-columns: 1fr;
-            }
-        }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #0d0d12;
+        touch-action: none;
+        -webkit-tap-highlight-color: transparent;
+        overscroll-behavior: none;
+      }
+      #game {
+        width: 100%;
+        height: 100%;
+      }
+      canvas {
+        display: block;
+      }
     </style>
-</head>
-<body>
-    <div class="container">
-        <header class="header">
-            <h1>🎮 鬥氣割草 編輯器套件</h1>
-            <p class="subtitle">專業級 H5 遊戲開發工具套件 - 線上版</p>
-        </header>
-
-        <div class="editors-grid">
-            <div class="editor-card">
-                <span class="editor-icon">🏗️</span>
-                <h2>場景編輯器</h2>
-                <p class="description">
-                    3D 場景設計工具，支援模型擺放、材質編輯、光照配置和特效設定。
-                    建立遊戲世界的視覺環境和基礎結構。
-                </p>
-                <a href="scene-editor/" class="launch-btn">啟動場景編輯器</a>
-            </div>
-
-            <div class="editor-card">
-                <span class="editor-icon">🎯</span>
-                <h2>2D關卡編輯器</h2>
-                <p class="description">
-                    2D關卡設計工具，直觀的拖放操作，支援敵人、道具、觸發器配置。
-                    快速設計2D遊戲關卡。
-                </p>
-                <a href="level-editor-2d/" class="launch-btn">啟動2D關卡編輯器</a>
-            </div>
-        </div>
-
-        <div class="features">
-            <h3>✨ 套件特色</h3>
-            <div class="features-grid">
-                <div class="feature-item">
-                    <span class="icon">🌐</span>
-                    <span>線上使用，無需安裝</span>
-                </div>
-                <div class="feature-item">
-                    <span class="icon">📱</span>
-                    <span>響應式設計，支援各種裝置</span>
-                </div>
-                <div class="feature-item">
-                    <span class="icon">🔄</span>
-                    <span>即時預覽，所見即所得</span>
-                </div>
-                <div class="feature-item">
-                    <span class="icon">💾</span>
-                    <span>標準化檔案格式 (.douqi.json)</span>
-                </div>
-                <div class="feature-item">
-                    <span class="icon">🎨</span>
-                    <span>直觀的視覺化編輯界面</span>
-                </div>
-                <div class="feature-item">
-                    <span class="icon">⚡</span>
-                    <span>高效能 3D 渲染引擎</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="links">
-            <a href="https://github.com/igs-weiyihsueh/douqi" target="_blank">📋 專案主頁</a>
-            <a href="https://github.com/igs-weiyihsueh/douqi/tree/main/tools/docs" target="_blank">📖 使用文檔</a>
-            <a href="https://igs-weiyihsueh.github.io/douqi/" target="_blank">🎮 遊戲預覽</a>
-        </div>
-
-        <footer class="footer">
-            <p>🎯 鬥氣割草編輯器套件 v1.0.0 | 基於 Phaser 3 + Three.js + TypeScript</p>
-            <p>© 2026 地球宿舍開發團隊 | 開源專案，遵循 MIT 授權</p>
-        </footer>
-    </div>
-
-    <script>
-        // 簡單的頁面載入動畫
-        document.addEventListener('DOMContentLoaded', function() {
-            const cards = document.querySelectorAll('.editor-card');
-            cards.forEach((card, index) => {
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(30px)';
-                
-                setTimeout(() => {
-                    card.style.transition = 'all 0.6s ease';
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
-                }, index * 200);
-            });
-        });
-
-        // 檢查瀏覽器相容性
-        function checkCompatibility() {
-            const canvas = document.createElement('canvas');
-            const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-            
-            if (!gl) {
-                alert('您的瀏覽器不支援 WebGL，編輯器可能無法正常運作。\n建議使用 Chrome 90+、Firefox 88+ 或 Safari 14+');
-            }
-        }
-
-        checkCompatibility();
-    </script>
-</body>
+    <script type="module" crossorigin src="./assets/index-BmVfsUxx.js"></script>
+  </head>
+  <body>
+    <div id="game"></div>
+  </body>
 </html>
