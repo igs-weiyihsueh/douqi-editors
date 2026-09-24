@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2D 關卡編輯器 - 鬥氣割草</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a1a;
+      color: #ffffff;
+      overflow: hidden;
+    }
+
+    #app {
+      display: flex;
+      height: 100vh;
+    }
+
+    .sidebar {
+      width: 300px;
+      background: #2a2a2a;
+      border-right: 1px solid #404040;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .main-view {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .toolbar {
+      height: 50px;
+      background: #333333;
+      border-bottom: 1px solid #404040;
+      display: flex;
+      align-items: center;
+      padding: 0 15px;
+      gap: 10px;
+    }
+
+    .canvas-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tab-group {
+      display: flex;
+      border-bottom: 1px solid #404040;
+    }
+
+    .tab {
+      padding: 10px 15px;
+      background: #2a2a2a;
+      border-right: 1px solid #404040;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .tab:hover {
+      background: #353535;
+    }
+
+    .tab.active {
+      background: #1a1a1a;
+    }
+
+    .panel-content {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+    }
+
+    .btn {
+      padding: 6px 12px;
+      background: #4a90e2;
+      border: none;
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .btn:hover {
+      background: #357abd;
+    }
+
+    .btn.secondary {
+      background: #6c757d;
+    }
+
+    .btn.secondary:hover {
+      background: #545b62;
+    }
+
+    .input-group {
+      margin-bottom: 15px;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 14px;
+      color: #cccccc;
+    }
+
+    .input-group input,
+    .input-group select,
+    .input-group textarea {
+      width: 100%;
+      padding: 8px;
+      background: #1a1a1a;
+      border: 1px solid #404040;
+      border-radius: 4px;
+      color: white;
+      font-size: 14px;
+    }
+
+    .entity-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .entity-item {
+      padding: 10px;
+      background: #1a1a1a;
+      border: 1px solid #404040;
+      border-radius: 4px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .entity-item:hover {
+      background: #353535;
+      border-color: #4a90e2;
+    }
+
+    .entity-item.selected {
+      background: #4a90e2;
+      border-color: #357abd;
+    }
+
+    .status-bar {
+      height: 30px;
+      background: #333333;
+      border-top: 1px solid #404040;
+      display: flex;
+      align-items: center;
+      padding: 0 15px;
+      font-size: 12px;
+      color: #cccccc;
+    }
+  </style>
+  <script type="module" crossorigin src="/assets/main-BzWM_SMl.js"></script>
+</head>
+<body>
+  <div id="app">
+    <div class="sidebar">
+      <div class="tab-group">
+        <div class="tab active" data-tab="scene">場景</div>
+        <div class="tab" data-tab="entities">實體</div>
+        <div class="tab" data-tab="events">事件</div>
+      </div>
+      
+      <div class="panel-content">
+        <div id="scene-panel">
+          <div class="input-group">
+            <label>關卡名稱</label>
+            <input type="text" id="level-name" placeholder="輸入關卡名稱">
+          </div>
+          
+          <div class="input-group">
+            <label>場景檔案</label>
+            <input type="file" id="scene-file" accept=".json">
+          </div>
+          
+          <div class="input-group">
+            <label>關卡描述</label>
+            <textarea id="level-description" rows="3" placeholder="關卡描述和目標"></textarea>
+          </div>
+          
+          <div class="input-group">
+            <label>遊戲時間 (秒)</label>
+            <input type="number" id="game-time" value="300">
+          </div>
+        </div>
+        
+        <div id="entities-panel" style="display: none;">
+          <h3>敵人</h3>
+          <div class="entity-list" id="enemy-list"></div>
+          
+          <h3>道具</h3>
+          <div class="entity-list" id="item-list"></div>
+          
+          <h3>可破壞物</h3>
+          <div class="entity-list" id="breakable-list"></div>
+        </div>
+        
+        <div id="events-panel" style="display: none;">
+          <h3>觸發事件</h3>
+          <button class="btn" id="add-trigger">新增觸發區域</button>
+          <div id="trigger-list"></div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="main-view">
+      <div class="toolbar">
+        <button class="btn" id="load-scene">載入場景</button>
+        <button class="btn secondary" id="save-level">儲存關卡</button>
+        <button class="btn secondary" id="export-level">匯出關卡</button>
+        <div style="flex: 1;"></div>
+        <span id="mouse-position">滑鼠: (0, 0)</span>
+      </div>
+      
+      <div class="canvas-container">
+        <canvas id="game-canvas"></canvas>
+      </div>
+      
+      <div class="status-bar">
+        <span id="status-text">準備就緒</span>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
