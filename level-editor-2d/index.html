@@ -97,8 +97,8 @@
 
     /* 左側面板 */
     #left-panel {
-      width: 260px;
-      min-width: 200px;
+      width: 320px;
+      min-width: 280px;
       max-width: 400px;
       background: #16213e;
       border-right: 1px solid #0f3460;
@@ -108,11 +108,11 @@
       flex-shrink: 0;
     }
 
-    /* 右側面板 */
+    /* 右側面板 - 更寬以容納預覽 */
     #right-panel {
-      width: 280px;
-      min-width: 200px;
-      max-width: 500px;
+      width: 480px;
+      min-width: 400px;
+      max-width: 600px;
       background: #16213e;
       border-left: 1px solid #0f3460;
       overflow-y: auto;
@@ -121,14 +121,62 @@
       flex-shrink: 0;
     }
 
-    /* 中央畫布區域 */
+    /* 中央畫布區域 - 調整為較小 */
     #canvas-area {
       flex: 1;
+      min-width: 300px;
       position: relative;
       background: #111;
       display: flex;
       align-items: center;
       justify-content: center;
+    }
+
+    /* 預覽區域 */
+    #preview-container {
+      width: 100%;
+      height: 360px;
+      border: 1px solid #0f3460;
+      border-radius: 4px;
+      background: #1a1a1a;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #preview-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .preview-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+      padding: 8px;
+      background: rgba(15, 52, 96, 0.3);
+      border-radius: 4px;
+    }
+
+    .preview-btn {
+      padding: 4px 8px;
+      font-size: 11px;
+      background: #0f3460;
+      border: 1px solid #1a4a7a;
+      color: #e0e0e0;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .preview-btn:hover {
+      background: #1a5276;
+    }
+
+    .preview-info {
+      font-size: 10px;
+      color: #888;
     }
 
     #game-canvas {
@@ -327,7 +375,7 @@
       background: #3ea6d6;
     }
   </style>
-  <script type="module" crossorigin src="./assets/main-9Urz96z6.js"></script>
+  <script type="module" crossorigin src="./assets/main-zXsmsq7m.js"></script>
 </head>
 <body>
   <!-- 頂部工具列 -->
@@ -435,6 +483,30 @@
 
     <!-- 右側面板 -->
     <div id="right-panel">
+      <!-- 即時預覽 -->
+      <div class="panel-section">
+        <div class="section-header">
+          <h3>🖼️ 即時預覽</h3>
+          <button class="collapse-btn">−</button>
+        </div>
+        <div class="section-content">
+          <div id="preview-container">
+            <canvas id="preview-canvas"></canvas>
+          </div>
+          <div class="preview-controls">
+            <div class="preview-info">
+              <span id="entity-count">實體: 0</span> | 
+              <span id="preview-zoom">縮放: 80%</span>
+            </div>
+            <div>
+              <button class="preview-btn" id="reset-camera">🔄 重置視角</button>
+              <button class="preview-btn" id="zoom-out">🔍− 縮小</button>
+              <button class="preview-btn" id="zoom-in">🔍+ 放大</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 關卡資訊 -->
       <div class="panel-section">
         <div class="section-header">
