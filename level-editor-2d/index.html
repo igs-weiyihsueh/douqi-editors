@@ -108,11 +108,11 @@
       flex-shrink: 0;
     }
 
-    /* 右側面板 - 更寬以容納預覽 */
+    /* 右側面板 */
     #right-panel {
-      width: 480px;
-      min-width: 400px;
-      max-width: 600px;
+      width: 280px;
+      min-width: 200px;
+      max-width: 500px;
       background: #16213e;
       border-left: 1px solid #0f3460;
       overflow-y: auto;
@@ -121,10 +121,9 @@
       flex-shrink: 0;
     }
 
-    /* 中央畫布區域 - 調整為較小 */
+    /* 中央畫布區域 */
     #canvas-area {
       flex: 1;
-      min-width: 300px;
       position: relative;
       background: #111;
       display: flex;
@@ -132,10 +131,10 @@
       justify-content: center;
     }
 
-    /* 預覽區域 */
-    #preview-container {
-      width: 100%;
-      height: 360px;
+    /* 緊湊預覽區域 */
+    .preview-container-small {
+      width: 260px;
+      height: 200px;
       border: 1px solid #0f3460;
       border-radius: 4px;
       background: #1a1a1a;
@@ -149,19 +148,19 @@
       display: block;
     }
 
-    .preview-controls {
+    .preview-controls-small {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 8px;
-      padding: 8px;
+      margin-top: 6px;
+      padding: 6px;
       background: rgba(15, 52, 96, 0.3);
       border-radius: 4px;
     }
 
     .preview-btn {
-      padding: 4px 8px;
-      font-size: 11px;
+      padding: 3px 6px;
+      font-size: 10px;
       background: #0f3460;
       border: 1px solid #1a4a7a;
       color: #e0e0e0;
@@ -175,7 +174,7 @@
     }
 
     .preview-info {
-      font-size: 10px;
+      font-size: 9px;
       color: #888;
     }
 
@@ -375,7 +374,7 @@
       background: #3ea6d6;
     }
   </style>
-  <script type="module" crossorigin src="./assets/main-zXsmsq7m.js"></script>
+  <script type="module" crossorigin src="./assets/main-DHLq5tpc.js"></script>
 </head>
 <body>
   <!-- 頂部工具列 -->
@@ -490,18 +489,18 @@
           <button class="collapse-btn">−</button>
         </div>
         <div class="section-content">
-          <div id="preview-container">
+          <div class="preview-container-small">
             <canvas id="preview-canvas"></canvas>
           </div>
-          <div class="preview-controls">
+          <div class="preview-controls-small">
             <div class="preview-info">
               <span id="entity-count">實體: 0</span> | 
-              <span id="preview-zoom">縮放: 80%</span>
+              <span id="preview-zoom">80%</span>
             </div>
             <div>
-              <button class="preview-btn" id="reset-camera">🔄 重置視角</button>
-              <button class="preview-btn" id="zoom-out">🔍− 縮小</button>
-              <button class="preview-btn" id="zoom-in">🔍+ 放大</button>
+              <button class="preview-btn" id="reset-camera">🔄</button>
+              <button class="preview-btn" id="zoom-out">−</button>
+              <button class="preview-btn" id="zoom-in">+</button>
             </div>
           </div>
         </div>
