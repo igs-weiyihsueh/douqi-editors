@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>關卡測試 - 鬥氣割草</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1a;
+            color: #ffffff;
+            overflow: hidden;
+        }
+
+        #gameContainer {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+        }
+
+        .game-canvas {
+            border: 2px solid #34495e;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .control-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+        }
+
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: #2980b9;
+        }
+
+        .btn.secondary {
+            background: #95a5a6;
+        }
+
+        .btn.secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .game-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            min-width: 200px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-size: 24px;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid #404040;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div class="loading" id="loadingScreen">
+            <div class="loading-spinner"></div>
+            <div>載入關卡中...</div>
+        </div>
+    </div>
+
+    <div class="control-panel">
+        <button class="btn secondary" onclick="returnToEditor()">🔙 返回編輯器</button>
+        <button class="btn" onclick="restartLevel()">🔄 重新開始</button>
+        <button class="btn" onclick="togglePause()">⏸️ 暫停</button>
+    </div>
+
+    <div class="game-info">
+        <div class="info-item">
+            <span>分數:</span>
+            <span id="scoreDisplay">0</span>
+        </div>
+        <div class="info-item">
+            <span>時間:</span>
+            <span id="timerDisplay">00:00</span>
+        </div>
+        <div class="info-item">
+            <span>目標:</span>
+            <span id="objectiveDisplay">0/0</span>
+        </div>
+        <div class="info-item">
+            <span>狀態:</span>
+            <span id="statusDisplay">準備中</span>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+    <script>
+        class GameTestScene extends Phaser.Scene {
+            constructor() {
+                super({ key: 'GameTestScene' });
+                this.levelData = null;
+                this.gameStarted = false;
+                this.gamePaused = false;
+                this.score = 0;
+                this.timeRemaining = 0;
+                this.objectivesCompleted = 0;
+                this.totalObjectives = 0;
+            }
+
+            init(data) {
+                this.levelData = data.levelData;
+                console.log('[GameTestScene] 載入關卡資料:', this.levelData);
+            }
+
+            preload() {
+                // 建立簡單的顏色方塊作為臨時素材
+                this.createTemporaryAssets();
+            }
+
+            create() {
+                console.log('[GameTestScene] 建立測試場景');
+
+                // 設定物理世界
+                this.physics.world.setBounds(0, 0, 1600, 1200);
+                this.cameras.main.setBounds(0, 0, 1600, 1200);
+
+                // 建立玩家
+                this.createPlayer();
+
+                // 載入關卡內容
+                if (this.levelData) {
+                    this.loadLevel();
+                } else {
+                    this.loadDefaultLevel();
+                }
+
+                // 設定輸入控制
+                this.setupInput();
+
+                // 隱藏載入畫面
+                document.getElementById('loadingScreen').style.display = 'none';
+                document.getElementById('statusDisplay').textContent = '遊戲中';
+                
+                this.gameStarted = true;
+            }
+
+            createTemporaryAssets() {
+                const graphics = this.add.graphics();
+                
+                // 玩家 - 藍色方塊
+                graphics.fillStyle(0x0080ff);
+                graphics.fillRect(0, 0, 32, 32);
+                graphics.generateTexture('player', 32, 32);
+                
+                // 敵人 - 紅色方塊
+                graphics.fillStyle(0xff0000);
+                graphics.fillRect(0, 0, 32, 32);
+                graphics.generateTexture('enemy', 32, 32);
+                
+                // 收集品 - 黃色圓點
+                graphics.fillStyle(0xffff00);
+                graphics.fillCircle(12, 12, 12);
+                graphics.generateTexture('collectible', 24, 24);
+                
+                // 強化道具 - 綠色方塊
+                graphics.fillStyle(0x00ff00);
+                graphics.fillRect(0, 0, 28, 28);
+                graphics.generateTexture('powerup', 28, 28);
+                
+                graphics.clear();
+            }
+
+            createPlayer() {
+                this.player = this.physics.add.sprite(400, 300, 'player');
+                this.player.setCollideWorldBounds(true);
+                
+                const playerBody = this.player.body;
+                if (playerBody) {
+                    playerBody.setSize(30, 30);
+                    playerBody.setMaxVelocity(200, 200);
+                    playerBody.setDrag(300, 300);
+                }
+                
+                this.cameras.main.startFollow(this.player);
+                this.cameras.main.setZoom(0.8);
+            }
+
+            loadLevel() {
+                if (!this.levelData || !this.levelData.level) return;
+
+                const level = this.levelData.level;
+                this.timeRemaining = level.timeLimit || 180;
+                this.totalObjectives = this.levelData.gameplay?.objectives?.length || 0;
+
+                // 設定玩家起始位置
+                if (this.levelData.gameplay?.playerStartPosition) {
+                    const pos = this.levelData.gameplay.playerStartPosition;
+                    this.player.setPosition(pos[0] * 50 + 400, pos[2] * 50 + 300);
+                }
+
+                // 生成實體
+                if (this.levelData.entities) {
+                    this.spawnEntities(this.levelData.entities);
+                }
+
+                // 啟動計時器
+                this.startTimer();
+
+                console.log('[GameTestScene] 關卡載入完成');
+            }
+
+            loadDefaultLevel() {
+                console.log('[GameTestScene] 載入預設測試關卡');
+                
+                this.timeRemaining = 60;
+                this.totalObjectives = 2;
+
+                // 生成一些測試實體
+                this.createTestEntity('collectible', 300, 200);
+                this.createTestEntity('enemy', 500, 400);
+                this.createTestEntity('powerup', 600, 250);
+
+                this.startTimer();
+            }
+
+            spawnEntities(entities) {
+                entities.forEach(entity => {
+                    const x = entity.position[0] * 50 + 400;
+                    const y = entity.position[2] * 50 + 300;
+                    this.createTestEntity(entity.type, x, y, entity.properties);
+                });
+            }
+
+            createTestEntity(type, x, y, properties = {}) {
+                let sprite;
+
+                switch (type) {
+                    case 'enemy':
+                        sprite = this.physics.add.sprite(x, y, 'enemy');
+                        break;
+                    case 'collectible':
+                        sprite = this.physics.add.sprite(x, y, 'collectible');
+                        this.tweens.add({
+                            targets: sprite,
+                            angle: 360,
+                            duration: 2000,
+                            repeat: -1
+                        });
+                        break;
+                    case 'powerup':
+                        sprite = this.physics.add.sprite(x, y, 'powerup');
+                        this.tweens.add({
+                            targets: sprite,
+                            scaleX: 1.2,
+                            scaleY: 1.2,
+                            duration: 800,
+                            yoyo: true,
+                            repeat: -1
+                        });
+                        break;
+                    default:
+                        return;
+                }
+
+                if (sprite) {
+                    sprite.setData('entityType', type);
+                    sprite.setData('properties', properties);
+                    sprite.setInteractive();
+                    
+                    // 設定碰撞
+                    this.physics.add.overlap(this.player, sprite, (player, entity) => {
+                        this.collectEntity(entity);
+                    });
+                }
+            }
+
+            collectEntity(entity) {
+                const type = entity.getData('entityType');
+                
+                switch (type) {
+                    case 'collectible':
+                        this.score += 10;
+                        this.objectivesCompleted++;
+                        break;
+                    case 'powerup':
+                        this.score += 25;
+                        break;
+                    case 'enemy':
+                        this.score += 50;
+                        this.objectivesCompleted++;
+                        break;
+                }
+
+                // 播放收集效果
+                const circle = this.add.circle(entity.x, entity.y, 20, 0xffffff, 0.8);
+                this.tweens.add({
+                    targets: circle,
+                    scaleX: 3,
+                    scaleY: 3,
+                    alpha: 0,
+                    duration: 300,
+                    onComplete: () => circle.destroy()
+                });
+
+                entity.destroy();
+                this.updateUI();
+
+                // 檢查勝利條件
+                if (this.objectivesCompleted >= this.totalObjectives) {
+                    this.completeLevel();
+                }
+            }
+
+            setupInput() {
+                this.input.on('pointerdown', (pointer) => {
+                    if (!this.gameStarted || this.gamePaused) return;
+                    
+                    const angle = Phaser.Math.Angle.Between(
+                        this.player.x, this.player.y,
+                        pointer.worldX, pointer.worldY
+                    );
+                    
+                    const playerBody = this.player.body;
+                    if (playerBody) {
+                        this.physics.velocityFromAngle(
+                            angle * 180 / Math.PI,
+                            200,
+                            playerBody.velocity
+                        );
+                    }
+                });
+            }
+
+            startTimer() {
+                this.gameTimer = this.time.addEvent({
+                    delay: 1000,
+                    callback: () => {
+                        this.timeRemaining--;
+                        this.updateUI();
+                        
+                        if (this.timeRemaining <= 0) {
+                            this.failLevel();
+                        }
+                    },
+                    repeat: this.timeRemaining - 1
+                });
+            }
+
+            updateUI() {
+                document.getElementById('scoreDisplay').textContent = this.score;
+                
+                const minutes = Math.floor(this.timeRemaining / 60);
+                const seconds = this.timeRemaining % 60;
+                document.getElementById('timerDisplay').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                document.getElementById('objectiveDisplay').textContent = 
+                    `${this.objectivesCompleted}/${this.totalObjectives}`;
+            }
+
+            completeLevel() {
+                this.gameStarted = false;
+                if (this.gameTimer) this.gameTimer.remove();
+                
+                document.getElementById('statusDisplay').textContent = '關卡完成！';
+                
+                this.add.text(400, 300, '🎉 關卡完成！', {
+                    fontSize: '48px',
+                    color: '#00ff00',
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    padding: { x: 30, y: 15 }
+                }).setOrigin(0.5).setScrollFactor(0);
+            }
+
+            failLevel() {
+                this.gameStarted = false;
+                if (this.gameTimer) this.gameTimer.remove();
+                
+                document.getElementById('statusDisplay').textContent = '關卡失敗';
+                
+                this.add.text(400, 300, '⏰ 時間用完了！', {
+                    fontSize: '48px',
+                    color: '#ff0000',
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    padding: { x: 30, y: 15 }
+                }).setOrigin(0.5).setScrollFactor(0);
+            }
+
+            togglePause() {
+                this.gamePaused = !this.gamePaused;
+                
+                if (this.gamePaused) {
+                    this.physics.pause();
+                    if (this.gameTimer) this.gameTimer.paused = true;
+                    document.getElementById('statusDisplay').textContent = '已暫停';
+                } else {
+                    this.physics.resume();
+                    if (this.gameTimer) this.gameTimer.paused = false;
+                    document.getElementById('statusDisplay').textContent = '遊戲中';
+                }
+            }
+
+            restart() {
+                this.scene.restart({ levelData: this.levelData });
+            }
+        }
+
+        // 全域遊戲變數
+        let game;
+        let currentScene;
+
+        // 初始化遊戲
+        function initGame() {
+            const config = {
+                type: Phaser.AUTO,
+                width: 800,
+                height: 600,
+                parent: 'gameContainer',
+                backgroundColor: '#2c3e50',
+                physics: {
+                    default: 'arcade',
+                    arcade: {
+                        gravity: { y: 0 },
+                        debug: false
+                    }
+                },
+                scene: GameTestScene,
+                scale: {
+                    mode: Phaser.Scale.FIT,
+                    autoCenter: Phaser.Scale.CENTER_BOTH
+                }
+            };
+
+            game = new Phaser.Game(config);
+            currentScene = game.scene.getScene('GameTestScene');
+
+            // 從 URL 參數載入關卡資料
+            const urlParams = new URLSearchParams(window.location.search);
+            const levelDataParam = urlParams.get('levelData');
+            
+            let levelData = null;
+            if (levelDataParam) {
+                try {
+                    levelData = JSON.parse(decodeURIComponent(levelDataParam));
+                    console.log('[GameTest] 從編輯器載入關卡:', levelData);
+                } catch (e) {
+                    console.error('[GameTest] 關卡資料解析失敗:', e);
+                }
+            }
+
+            // 傳遞關卡資料到場景
+            currentScene.scene.restart({ levelData: levelData });
+        }
+
+        // 控制函數
+        function returnToEditor() {
+            const referrer = document.referrer;
+            if (referrer && referrer.includes('level-editor')) {
+                window.location.href = referrer;
+            } else {
+                window.location.href = '../level-editor-2d/';
+            }
+        }
+
+        function restartLevel() {
+            if (currentScene) {
+                currentScene.restart();
+            }
+        }
+
+        function togglePause() {
+            if (currentScene) {
+                currentScene.togglePause();
+            }
+        }
+
+        // 頁面載入時初始化遊戲
+        window.addEventListener('load', initGame);
+    </script>
+</body>
+</html>
