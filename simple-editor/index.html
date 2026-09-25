@@ -1132,20 +1132,22 @@
         panStarted: false
       };
       
-      // 全域pointer事件處理
-      canvas.addEventListener('pointerdown', (e) => {
-        // 如果沒有拖拽實體，則準備攝影機平移
-        if (!globalDragState.dragEntity) {
+      // 全域事件處理 - 使用mousedown/mouseup而非pointer事件以便區分按鍵
+      canvas.addEventListener('mousedown', (e) => {
+        if (e.button === 1) { // 中鍵（滾輪按鈕）
+          // 中鍵專用於攝影機平移
+          e.preventDefault(); // 防止瀏覽器默認中鍵行為
           cameraPanState.isPanning = true;
           cameraPanState.lastPointerX = e.clientX;
           cameraPanState.lastPointerY = e.clientY;
           cameraPanState.panStarted = false;
           canvas.style.cursor = 'grabbing';
         }
+        // 左鍵不在這裡處理，留給實體的pointer事件
       });
       
-      canvas.addEventListener('pointermove', (e) => {
-        // 處理實體拖拽
+      canvas.addEventListener('mousemove', (e) => {
+        // 處理實體拖拽（左鍵）
         if (globalDragState.dragEntity) {
           const rect = canvas.getBoundingClientRect();
           const mouseX = e.clientX - rect.left;
@@ -1186,7 +1188,7 @@
             }
           }
         }
-        // 處理攝影機平移
+        // 處理攝影機平移（中鍵）
         else if (cameraPanState.isPanning) {
           const deltaX = (e.clientX - cameraPanState.lastPointerX) / cameraZoom;
           const deltaY = (e.clientY - cameraPanState.lastPointerY) / cameraZoom;
@@ -1205,32 +1207,41 @@
         }
       });
       
-      canvas.addEventListener('pointerup', (e) => {
-        // 結束拖拽
-        if (globalDragState.dragEntity) {
-          // 如果沒有實際拖拽（距離小於閾值），則只是點擊選擇
-          if (!globalDragState.isDragging) {
-            // 點擊選擇已經在pointerdown中處理了
+      canvas.addEventListener('mouseup', (e) => {
+        if (e.button === 1) { // 中鍵釋放
+          // 結束攝影機平移
+          if (cameraPanState.isPanning) {
+            cameraPanState.isPanning = false;
+            cameraPanState.panStarted = false;
+            canvas.style.cursor = 'default';
           }
-          
-          // 重置拖拽狀態
-          globalDragState.isDragging = false;
-          globalDragState.dragEntity = null;
-          canvas.style.cursor = 'grab';
-        }
-        
-        // 結束攝影機平移
-        if (cameraPanState.isPanning) {
-          cameraPanState.isPanning = false;
-          cameraPanState.panStarted = false;
-          canvas.style.cursor = 'grab';
+        } else if (e.button === 0) { // 左鍵釋放
+          // 結束實體拖拽
+          if (globalDragState.dragEntity) {
+            // 如果沒有實際拖拽（距離小於閾值），則只是點擊選擇
+            if (!globalDragState.isDragging) {
+              // 點擊選擇已經在pointerdown中處理了
+            }
+            
+            // 重置拖拽狀態
+            globalDragState.isDragging = false;
+            globalDragState.dragEntity = null;
+            canvas.style.cursor = 'default';
+          }
         }
       });
       
       // === 拖拽相關輔助函數 ===
       
+      // 防止中鍵默認行為（滾動等）
+      canvas.addEventListener('auxclick', (e) => {
+        if (e.button === 1) { // 中鍵點擊
+          e.preventDefault();
+        }
+      });
+      
       // 取消選擇並清理拖拽狀態
-      canvas.addEventListener('pointerleave', () => {
+      canvas.addEventListener('mouseleave', () => {
         // 如果滑鼠離開canvas，結束所有交互
         if (globalDragState.dragEntity) {
           globalDragState.isDragging = false;
@@ -1240,7 +1251,7 @@
           cameraPanState.isPanning = false;
           cameraPanState.panStarted = false;
         }
-        canvas.style.cursor = 'grab';
+        canvas.style.cursor = 'default';
       });
       
       // 處理右鍵點擊（取消選擇）
@@ -1276,8 +1287,11 @@
         updateCameraTransform();
       });
       
-      // 設定游標樣式
-      canvas.style.cursor = 'grab';
+      // 設定初始游標樣式
+      canvas.style.cursor = 'default';
+      
+      // 添加操作說明到title屬性
+      canvas.title = '左鍵：選擇和拖拽物件 | 中鍵：拖動攝影機 | 滾輪：縮放 | 右鍵：取消選擇';
       
       // 添加鍵盤快捷鍵支持
       document.addEventListener('keydown', (e) => {
@@ -1286,7 +1300,7 @@
           if (globalDragState.dragEntity) {
             globalDragState.isDragging = false;
             globalDragState.dragEntity = null;
-            canvas.style.cursor = 'grab';
+            canvas.style.cursor = 'default';
           }
           if (selectedEntity) {
             redrawEntity(selectedEntity, false);
