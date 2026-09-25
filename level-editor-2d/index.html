@@ -241,6 +241,19 @@
       color: #888;
     }
 
+    .preview-help {
+      margin-top: 4px;
+      padding: 4px;
+      background: rgba(15, 52, 96, 0.2);
+      border-radius: 3px;
+      text-align: center;
+    }
+
+    .preview-help small {
+      color: #666;
+      font-size: 8px;
+    }
+
     #game-canvas {
       background: #2a2a2a; /* 與遊戲背景一致 */
       border: 1px solid #444;
@@ -441,7 +454,7 @@
       background: #3ea6d6;
     }
   </style>
-  <script type="module" crossorigin src="./assets/main-B54y6rR-.js"></script>
+  <script type="module" crossorigin src="./assets/main-BqkimSSt.js"></script>
 </head>
 <body>
   <!-- 頂部工具列 -->
@@ -577,10 +590,14 @@
               <span id="preview-zoom">80%</span>
             </div>
             <div>
-              <button class="preview-btn" id="reset-camera">🔄</button>
-              <button class="preview-btn" id="zoom-out">−</button>
-              <button class="preview-btn" id="zoom-in">+</button>
+              <button class="preview-btn" id="fit-view" title="適合視窗 (F)">📐</button>
+              <button class="preview-btn" id="reset-camera" title="重置視角 (0)">🔄</button>
+              <button class="preview-btn" id="zoom-out" title="縮小 (-)">−</button>
+              <button class="preview-btn" id="zoom-in" title="放大 (+)">+</button>
             </div>
+          </div>
+          <div class="preview-help">
+            <small>💡 滾輪縮放 | 拖拽平移 | Ctrl+滾輪精細縮放</small>
           </div>
         </div>
       </div>
