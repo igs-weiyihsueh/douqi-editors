@@ -107,8 +107,9 @@
       
       <div class="controls">
         <button onclick="loadTestLevel()">載入測試關卡</button>
-        <button onclick="resetView()">重置視角</button>
+        <button onclick="resetView()">重置攝影機</button>
         <button onclick="toggleGrid()">切換網格</button>
+        <button onclick="toggleBounds()">切換邊界</button>
       </div>
     </div>
   </div>
@@ -120,11 +121,18 @@
     let container = null;
     let entities = [];
     let showGrid = true;
+    let showBounds = true;
     
-    // === 16:9 比例設定 ===
-    const CANVAS_WIDTH = 960;   // 16:9 比例
-    const CANVAS_HEIGHT = 540;  // 16:9 比例
-    const SCALE = 0.8;          // 初始縮放
+    // === 遊戲場地設定 - 基於實際鬥氣割草配置 ===
+    const GAME_WORLD_WIDTH = 1600;   // 實際遊戲世界寬度  
+    const GAME_WORLD_HEIGHT = 1200;  // 實際遊戲世界高度
+    const CANVAS_WIDTH = 960;        // Canvas顯示寬度 (16:9)
+    const CANVAS_HEIGHT = 540;       // Canvas顯示高度 (16:9)
+    
+    // === 攝影機設定 ===
+    let cameraX = 0;                 // 攝影機X位置
+    let cameraY = 0;                 // 攝影機Y位置  
+    let cameraZoom = 0.4;            // 攝影機縮放 (初始值讓整個場地可見)
     
     // === 初始化 PIXI ===
     function initEditor() {
@@ -149,21 +157,72 @@
       container = new PIXI.Container();
       app.stage.addChild(container);
       
-      // 設定初始位置和縮放
+      // 設定初始攝影機位置和縮放
       container.x = CANVAS_WIDTH / 2;
       container.y = CANVAS_HEIGHT / 2;
-      container.scale.set(SCALE);
+      container.scale.set(cameraZoom);
       
       // 創建背景網格
       createGrid();
+      
+      // 創建關卡邊界
+      createLevelBounds();
       
       // 更新資訊顯示
       updateInfo();
       
       console.log('簡潔編輯器初始化完成');
       console.log(`Canvas: ${CANVAS_WIDTH}x${CANVAS_HEIGHT}`);
-      console.log(`容器中心: (${container.x}, ${container.y})`);
-      console.log(`初始縮放: ${SCALE}`);
+      console.log(`遊戲世界: ${GAME_WORLD_WIDTH}x${GAME_WORLD_HEIGHT}`);
+      console.log(`攝影機位置: (${cameraX}, ${cameraY})`);
+      console.log(`攝影機縮放: ${cameraZoom}`);
+    }
+    
+    // === 創建關卡邊界顯示 ===
+    function createLevelBounds() {
+      const boundsContainer = new PIXI.Container();
+      const graphics = new PIXI.Graphics();
+      
+      // 繪製關卡邊界矩形
+      graphics.lineStyle(4, 0xff6b6b, 0.8); // 紅色邊界線
+      graphics.drawRect(
+        -GAME_WORLD_WIDTH / 2, 
+        -GAME_WORLD_HEIGHT / 2, 
+        GAME_WORLD_WIDTH, 
+        GAME_WORLD_HEIGHT
+      );
+      
+      // 繪製邊界角標
+      const cornerSize = 50;
+      graphics.lineStyle(6, 0xff6b6b, 1.0);
+      
+      // 左上角
+      graphics.moveTo(-GAME_WORLD_WIDTH / 2, -GAME_WORLD_HEIGHT / 2 + cornerSize);
+      graphics.lineTo(-GAME_WORLD_WIDTH / 2, -GAME_WORLD_HEIGHT / 2);
+      graphics.lineTo(-GAME_WORLD_WIDTH / 2 + cornerSize, -GAME_WORLD_HEIGHT / 2);
+      
+      // 右上角
+      graphics.moveTo(GAME_WORLD_WIDTH / 2 - cornerSize, -GAME_WORLD_HEIGHT / 2);
+      graphics.lineTo(GAME_WORLD_WIDTH / 2, -GAME_WORLD_HEIGHT / 2);
+      graphics.lineTo(GAME_WORLD_WIDTH / 2, -GAME_WORLD_HEIGHT / 2 + cornerSize);
+      
+      // 右下角
+      graphics.moveTo(GAME_WORLD_WIDTH / 2, GAME_WORLD_HEIGHT / 2 - cornerSize);
+      graphics.lineTo(GAME_WORLD_WIDTH / 2, GAME_WORLD_HEIGHT / 2);
+      graphics.lineTo(GAME_WORLD_WIDTH / 2 - cornerSize, GAME_WORLD_HEIGHT / 2);
+      
+      // 左下角
+      graphics.moveTo(-GAME_WORLD_WIDTH / 2 + cornerSize, GAME_WORLD_HEIGHT / 2);
+      graphics.lineTo(-GAME_WORLD_WIDTH / 2, GAME_WORLD_HEIGHT / 2);
+      graphics.lineTo(-GAME_WORLD_WIDTH / 2, GAME_WORLD_HEIGHT / 2 - cornerSize);
+      
+      boundsContainer.addChild(graphics);
+      container.addChild(boundsContainer);
+      
+      // 儲存邊界引用
+      container.boundsContainer = boundsContainer;
+      
+      console.log(`關卡邊界: ${GAME_WORLD_WIDTH}x${GAME_WORLD_HEIGHT}`);
     }
     
     // === 創建背景網格 ===
@@ -211,14 +270,22 @@
       });
       entities = [];
       
-      // 創建測試實體
+      // 創建測試實體 - 基於test_level.json的實際座標
       const testEntities = [
-        { type: 'enemy', x: -200, y: 0, color: 0xff4444 },
-        { type: 'enemy', x: 200, y: 0, color: 0xff4444 },
-        { type: 'item', x: 0, y: -150, color: 0x44ff44 },
-        { type: 'item', x: 0, y: 150, color: 0x44ff44 },
-        { type: 'powerup', x: -100, y: -100, color: 0x4444ff },
-        { type: 'powerup', x: 100, y: 100, color: 0x4444ff }
+        // 基於test_level.json中的實體位置 (3D轉2D: x,z座標)
+        { type: 'enemy', x: 300, y: 300, color: 0xff4444, name: 'enemy_001' },   // position: [3,0,3]
+        { type: 'collectible', x: 100, y: 100, color: 0x44ff44, name: 'collectible_001' }, // position: [1,1,1] 
+        { type: 'powerup', x: -100, y: -100, color: 0x4444ff, name: 'powerup_001' }, // position: [-1,1,-1]
+        
+        // 額外測試實體展示場地範圍
+        { type: 'enemy', x: -700, y: 0, color: 0xff4444, name: 'enemy_left' },
+        { type: 'enemy', x: 700, y: 0, color: 0xff4444, name: 'enemy_right' },
+        { type: 'collectible', x: 0, y: -500, color: 0x44ff44, name: 'item_top' },
+        { type: 'collectible', x: 0, y: 500, color: 0x44ff44, name: 'item_bottom' },
+        
+        // 邊界附近的實體  
+        { type: 'powerup', x: -750, y: -550, color: 0x4444ff, name: 'corner_tl' },
+        { type: 'powerup', x: 750, y: 550, color: 0x4444ff, name: 'corner_br' }
       ];
       
       testEntities.forEach(entityData => {
@@ -261,13 +328,34 @@
     
     // === 重置視角 ===
     function resetView() {
-      container.x = CANVAS_WIDTH / 2;
-      container.y = CANVAS_HEIGHT / 2;
-      container.scale.set(SCALE);
-      container.rotation = 0;
+      // 重置攝影機到中心，縮放讓整個場地可見
+      cameraX = 0;
+      cameraY = 0; 
+      cameraZoom = 0.4;
       
+      // 更新容器變換
+      updateCameraTransform();
       updateInfo();
-      console.log('視角已重置');
+      console.log('攝影機視角已重置');
+    }
+    
+    // === 更新攝影機變換 ===
+    function updateCameraTransform() {
+      // 攝影機縮放
+      container.scale.set(cameraZoom);
+      
+      // 攝影機位置 (注意：容器位移方向與攝影機移動方向相反)
+      container.x = CANVAS_WIDTH / 2 - cameraX * cameraZoom;
+      container.y = CANVAS_HEIGHT / 2 - cameraY * cameraZoom;
+    }
+    
+    // === 切換邊界顯示 ===
+    function toggleBounds() {
+      showBounds = !showBounds;
+      if (container.boundsContainer) {
+        container.boundsContainer.visible = showBounds;
+      }
+      updateInfo();
     }
     
     // === 切換網格顯示 ===
@@ -283,11 +371,13 @@
     function updateInfo() {
       const info = document.getElementById('info');
       info.innerHTML = `
-        尺寸: ${CANVAS_WIDTH}×${CANVAS_HEIGHT}<br>
-        比例: 16:9<br>
-        縮放: ${container ? container.scale.x.toFixed(2) : 'N/A'}<br>
+        Canvas: ${CANVAS_WIDTH}×${CANVAS_HEIGHT}<br>
+        遊戲世界: ${GAME_WORLD_WIDTH}×${GAME_WORLD_HEIGHT}<br>
+        攝影機: (${cameraX.toFixed(0)}, ${cameraY.toFixed(0)})<br>
+        縮放: ${cameraZoom.toFixed(2)}x<br>
         實體: ${entities.length}<br>
-        網格: ${showGrid ? '顯示' : '隱藏'}
+        網格: ${showGrid ? '顯示' : '隱藏'}<br>
+        邊界: ${showBounds ? '顯示' : '隱藏'}
       `;
     }
     
@@ -297,18 +387,33 @@
       let isDragging = false;
       let lastPos = { x: 0, y: 0 };
       
-      // 滑鼠滾輪縮放
+      // 滑鼠滾輪縮放 (攝影機縮放)
       canvas.addEventListener('wheel', (e) => {
         e.preventDefault();
         
-        const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-        const newScale = Math.max(0.1, Math.min(3.0, container.scale.x * zoomFactor));
+        // 獲取滑鼠在Canvas中的位置
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left - CANVAS_WIDTH / 2;
+        const mouseY = e.clientY - rect.top - CANVAS_HEIGHT / 2;
         
-        container.scale.set(newScale);
+        // 計算世界座標中的滑鼠位置
+        const worldX = cameraX + mouseX / cameraZoom;
+        const worldY = cameraY + mouseY / cameraZoom;
+        
+        // 縮放
+        const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+        const newZoom = Math.max(0.1, Math.min(3.0, cameraZoom * zoomFactor));
+        
+        // 調整攝影機位置使縮放中心保持在滑鼠位置
+        cameraX = worldX - mouseX / newZoom;
+        cameraY = worldY - mouseY / newZoom;
+        cameraZoom = newZoom;
+        
+        updateCameraTransform();
         updateInfo();
       });
       
-      // 滑鼠拖拽平移
+      // 滑鼠拖拽平移 (攝影機移動)
       canvas.addEventListener('mousedown', (e) => {
         isDragging = true;
         lastPos.x = e.clientX;
@@ -321,12 +426,14 @@
           const deltaX = e.clientX - lastPos.x;
           const deltaY = e.clientY - lastPos.y;
           
-          container.x += deltaX;
-          container.y += deltaY;
+          // 移動攝影機 (注意方向相反)
+          cameraX -= deltaX / cameraZoom;
+          cameraY -= deltaY / cameraZoom;
           
           lastPos.x = e.clientX;
           lastPos.y = e.clientY;
           
+          updateCameraTransform();
           updateInfo();
         }
       });
