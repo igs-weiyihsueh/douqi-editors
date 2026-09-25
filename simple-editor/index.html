@@ -81,6 +81,28 @@
       background: #5a6375;
     }
     
+    /* 下拉選單樣式 */
+    .toolbar select {
+      background: #718096;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background-color 0.2s;
+    }
+    
+    .toolbar select:hover {
+      background: #5a6375;
+    }
+    
+    .toolbar select option {
+      background: #2d3748;
+      color: white;
+    }
+    
     /* 左方工具列 */
     .left-sidebar {
       width: 250px;
@@ -199,6 +221,63 @@
       /* Info panel removed - no longer displaying status information */
       display: none;
     }
+    
+    /* 預覽區重置按鈕 */
+    .reset-camera-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(74, 85, 104, 0.9);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      z-index: 100;
+      transition: background-color 0.2s;
+    }
+    
+    .reset-camera-btn:hover {
+      background: rgba(94, 111, 130, 0.9);
+    }
+    
+    /* 隱藏的文件輸入 */
+    .hidden-file-input {
+      display: none;
+    }
+    
+    /* 物件列表樣式 */
+    .entity-item {
+      background: #1a202c;
+      border: 1px solid #4a5568;
+      border-radius: 4px;
+      padding: 8px;
+      margin-bottom: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .entity-item:hover {
+      background: #2d3748;
+    }
+    
+    .entity-item.selected {
+      background: #2b6cb0;
+      border-color: #3182ce;
+    }
+    
+    .entity-type {
+      font-weight: bold;
+      color: #e2e8f0;
+    }
+    
+    .entity-pos {
+      color: #a0aec0;
+      font-family: monospace;
+    }
   </style>
 </head>
 <body>
@@ -209,6 +288,18 @@
     <div class="toolbar-group">
       <label>關卡:</label>
       <button onclick="clearLevel()" class="secondary">清除關卡</button>
+    </div>
+    
+    <div class="toolbar-group">
+      <label>檔案:</label>
+      <button onclick="exportLevel()">匯出關卡</button>
+      <button onclick="importLevel()" class="secondary">匯入關卡</button>
+      <select id="level-select" onchange="selectLevel()" class="secondary">
+        <option value="">選擇關卡...</option>
+        <option value="test_level">測試關卡</option>
+        <option value="level_1">關卡 1</option>
+        <option value="level_2">關卡 2</option>
+      </select>
     </div>
     
     <div class="toolbar-group">
@@ -231,18 +322,24 @@
       
       <div class="sidebar-content">
         <div class="sidebar-group">
-          <h3>實體工具</h3>
-          <p style="color: #a0aec0; font-size: 12px; margin: 0; padding: 10px;">實體編輯工具將在此處添加</p>
+          <h3>物件管理</h3>
+          <div id="entity-list">
+            <p style="color: #a0aec0; font-size: 12px; margin: 0; padding: 10px;">目前沒有物件</p>
+          </div>
         </div>
         
         <div class="sidebar-group">
-          <h3>地形工具</h3>
-          <p style="color: #a0aec0; font-size: 12px; margin: 0; padding: 10px;">地形編輯工具將在此處添加</p>
+          <h3>實體工具</h3>
+          <button class="sidebar-button" onclick="addTestEntity('enemy')">添加敵人</button>
+          <button class="sidebar-button" onclick="addTestEntity('collectible')">添加道具</button>
+          <button class="sidebar-button" onclick="addTestEntity('powerup')">添加強化</button>
         </div>
         
         <div class="sidebar-group">
           <h3>屬性面板</h3>
-          <p style="color: #a0aec0; font-size: 12px; margin: 0; padding: 10px;">選中實體的屬性將在此處顯示</p>
+          <div id="selected-entity-info">
+            <p style="color: #a0aec0; font-size: 12px; margin: 0; padding: 10px;">未選中物件</p>
+          </div>
         </div>
       </div>
     </div>
@@ -253,10 +350,14 @@
         
         <div class="canvas-wrapper">
           <canvas id="game-canvas"></canvas>
+          <button class="reset-camera-btn" onclick="resetCamera()">重置攝影機</button>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- 隱藏的文件輸入 -->
+  <input type="file" id="file-input" class="hidden-file-input" accept=".json" onchange="handleFileImport(event)">
 
   <script src="https://unpkg.com/pixi.js@7.2.4/dist/pixi.min.js"></script>
   <script>
@@ -266,6 +367,8 @@
     let entities = [];
     let showGrid = true;
     let showBounds = true;
+    let selectedEntity = null;
+    let entityIdCounter = 0;
     
     // === 遊戲場地設定 - 基於實際鬥氣割草配置 ===
     const GAME_WORLD_WIDTH = 1600;   // 實際遊戲世界寬度  
@@ -416,9 +519,22 @@
         container.removeChild(entity);
       });
       entities = [];
+      selectedEntity = null;
       
-      updateInfo();
+      updateEntityList();
       console.log('關卡已清除');
+    }
+    
+    // === 重置攝影機 ===
+    function resetCamera() {
+      // 重置攝影機到中心，縮放讓整個場地可見
+      cameraX = 0;
+      cameraY = 0; 
+      cameraZoom = 0.4;
+      
+      // 更新容器變換
+      updateCameraTransform();
+      console.log('攝影機已重置');
     }
     
     // === 切換網格顯示 ===
@@ -439,6 +555,305 @@
       }
       updateInfo();
       console.log(`邊界顯示: ${showBounds ? '開啟' : '關閉'}`);
+    }
+    
+    // === 匯出關卡 ===
+    function exportLevel() {
+      const levelData = {
+        name: "編輯器關卡",
+        version: "1.0",
+        entities: entities.map(entity => ({
+          type: entity.userData.type,
+          position: [entity.x / 50, 0, entity.y / 50], // 轉換回3D座標
+          color: entity.userData.color,
+          id: entity.userData.id
+        }))
+      };
+      
+      const dataStr = JSON.stringify(levelData, null, 2);
+      const dataBlob = new Blob([dataStr], {type: 'application/json'});
+      
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(dataBlob);
+      link.download = 'level_export.json';
+      link.click();
+      
+      console.log('關卡已匯出:', levelData);
+    }
+    
+    // === 匯入關卡 ===
+    function importLevel() {
+      document.getElementById('file-input').click();
+    }
+    
+    // === 處理文件匯入 ===
+    function handleFileImport(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const levelData = JSON.parse(e.target.result);
+          loadLevelData(levelData);
+          console.log('關卡已匯入:', levelData);
+        } catch (error) {
+          alert('文件格式錯誤: ' + error.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+    
+    // === 選擇預設關卡 ===
+    function selectLevel() {
+      const select = document.getElementById('level-select');
+      const levelName = select.value;
+      
+      if (!levelName) return;
+      
+      if (levelName === 'test_level') {
+        loadTestLevel();
+      } else {
+        alert(`關卡 "${levelName}" 尚未實現`);
+      }
+      
+      // 重置選擇
+      select.value = '';
+    }
+    
+    // === 載入關卡數據 ===
+    function loadLevelData(levelData) {
+      clearLevel();
+      
+      if (levelData.entities) {
+        levelData.entities.forEach((entityData, index) => {
+          const entity = createEntity({
+            type: entityData.type || 'enemy',
+            x: (entityData.position ? entityData.position[0] : 0) * 50,
+            y: (entityData.position ? entityData.position[2] : 0) * 50,
+            color: entityData.color || 0xff4444,
+            name: `${entityData.type}_${entityIdCounter++}`,
+            id: entityData.id || `entity_${entityIdCounter}`
+          });
+          entities.push(entity);
+          container.addChild(entity);
+        });
+      }
+      
+      updateEntityList();
+    }
+    
+    // === 載入測試關卡 ===
+    function loadTestLevel() {
+      clearLevel();
+      
+      console.log('=== 載入test_level.json座標驗證 ===');
+      
+      const testEntities = [
+        { 
+          type: 'enemy', 
+          x: 3 * 50, y: 3 * 50,  // [3,0,3] → (150, 150)
+          color: 0xff4444, 
+          name: 'enemy_001',
+          id: 'enemy_001'
+        },
+        { 
+          type: 'collectible', 
+          x: 1 * 50, y: 1 * 50,  // [1,1,1] → (50, 50)
+          color: 0x44ff44, 
+          name: 'collectible_001',
+          id: 'collectible_001'
+        },
+        { 
+          type: 'powerup', 
+          x: -1 * 50, y: -1 * 50,  // [-1,1,-1] → (-50, -50)
+          color: 0x4444ff, 
+          name: 'powerup_001',
+          id: 'powerup_001'
+        }
+      ];
+      
+      testEntities.forEach((entityData, index) => {
+        const entity = createEntity(entityData);
+        entities.push(entity);
+        container.addChild(entity);
+        
+        console.log(`實體 ${index + 1}: ${entityData.name} | 2D座標: (${entityData.x}, ${entityData.y})`);
+      });
+      
+      updateEntityList();
+      console.log(`=== 載入完成：${entities.length}個實體 ===`);
+    }
+    
+    // === 創建實體 ===
+    function createEntity(data) {
+      const graphics = new PIXI.Graphics();
+      
+      // 根據類型設定大小
+      let size = 10;
+      switch(data.type) {
+        case 'enemy': size = 14; break;
+        case 'collectible': size = 8; break;
+        case 'powerup': size = 12; break;
+      }
+      
+      // 繪製實體
+      graphics.beginFill(data.color);
+      graphics.drawCircle(0, 0, size);
+      graphics.endFill();
+      
+      // 繪製邊框
+      graphics.lineStyle(2, 0xffffff, 0.8);
+      graphics.drawCircle(0, 0, size);
+      
+      // 設定位置
+      graphics.x = data.x;
+      graphics.y = data.y;
+      
+      // 儲存數據
+      graphics.userData = {
+        type: data.type,
+        color: data.color,
+        name: data.name || `${data.type}_${entityIdCounter++}`,
+        id: data.id || `entity_${entityIdCounter++}`
+      };
+      
+      // 添加點擊事件
+      graphics.interactive = true;
+      graphics.buttonMode = true;
+      graphics.on('pointerdown', () => selectEntityObject(graphics));
+      
+      return graphics;
+    }
+    
+    // === 添加測試實體 ===
+    function addTestEntity(type) {
+      const colors = {
+        enemy: 0xff4444,
+        collectible: 0x44ff44,
+        powerup: 0x4444ff
+      };
+      
+      const entity = createEntity({
+        type: type,
+        x: (Math.random() - 0.5) * 400,  // 隨機位置
+        y: (Math.random() - 0.5) * 300,
+        color: colors[type] || 0xff4444,
+        name: `${type}_${entityIdCounter}`,
+        id: `entity_${entityIdCounter++}`
+      });
+      
+      entities.push(entity);
+      container.addChild(entity);
+      updateEntityList();
+      
+      console.log(`已添加 ${type}:`, entity.userData);
+    }
+    
+    // === 選擇實體 ===
+    function selectEntityObject(entity) {
+      // 取消之前選中的實體高亮
+      if (selectedEntity) {
+        selectedEntity.clear();
+        // 重繪原始實體
+        const data = selectedEntity.userData;
+        let size = data.type === 'enemy' ? 14 : data.type === 'collectible' ? 8 : 12;
+        selectedEntity.beginFill(data.color);
+        selectedEntity.drawCircle(0, 0, size);
+        selectedEntity.endFill();
+        selectedEntity.lineStyle(2, 0xffffff, 0.8);
+        selectedEntity.drawCircle(0, 0, size);
+      }
+      
+      selectedEntity = entity;
+      
+      // 高亮選中實體
+      entity.clear();
+      const data = entity.userData;
+      let size = data.type === 'enemy' ? 14 : data.type === 'collectible' ? 8 : 12;
+      entity.beginFill(data.color);
+      entity.drawCircle(0, 0, size);
+      entity.endFill();
+      entity.lineStyle(3, 0xffff00, 1.0); // 黃色高亮邊框
+      entity.drawCircle(0, 0, size);
+      
+      updateEntityList();
+      updateSelectedEntityInfo();
+    }
+    
+    // === 更新實體列表 ===
+    function updateEntityList() {
+      const listContainer = document.getElementById('entity-list');
+      
+      if (entities.length === 0) {
+        listContainer.innerHTML = '<p style="color: #a0aec0; font-size: 12px; margin: 0; padding: 10px;">目前沒有物件</p>';
+        return;
+      }
+      
+      listContainer.innerHTML = '';
+      
+      entities.forEach((entity, index) => {
+        const data = entity.userData;
+        const item = document.createElement('div');
+        item.className = 'entity-item';
+        item.onclick = () => selectEntityObject(entity);
+        
+        if (entity === selectedEntity) {
+          item.classList.add('selected');
+        }
+        
+        item.innerHTML = `
+          <div class="entity-type">${data.type}</div>
+          <div class="entity-pos">(${Math.round(entity.x)}, ${Math.round(entity.y)})</div>
+        `;
+        
+        listContainer.appendChild(item);
+      });
+    }
+    
+    // === 更新選中實體資訊 ===
+    function updateSelectedEntityInfo() {
+      const infoContainer = document.getElementById('selected-entity-info');
+      
+      if (!selectedEntity) {
+        infoContainer.innerHTML = '<p style="color: #a0aec0; font-size: 12px; margin: 0; padding: 10px;">未選中物件</p>';
+        return;
+      }
+      
+      const data = selectedEntity.userData;
+      infoContainer.innerHTML = `
+        <div style="padding: 10px; font-size: 12px;">
+          <div style="margin-bottom: 8px;">
+            <strong>類型:</strong> ${data.type}
+          </div>
+          <div style="margin-bottom: 8px;">
+            <strong>位置:</strong> (${Math.round(selectedEntity.x)}, ${Math.round(selectedEntity.y)})
+          </div>
+          <div style="margin-bottom: 8px;">
+            <strong>顏色:</strong> #${data.color.toString(16).padStart(6, '0')}
+          </div>
+          <div style="margin-bottom: 8px;">
+            <strong>ID:</strong> ${data.id}
+          </div>
+          <button onclick="deleteSelectedEntity()" style="background: #e53e3e; color: white; border: none; padding: 4px 8px; border-radius: 2px; cursor: pointer; font-size: 11px;">刪除</button>
+        </div>
+      `;
+    }
+    
+    // === 刪除選中實體 ===
+    function deleteSelectedEntity() {
+      if (!selectedEntity) return;
+      
+      const index = entities.indexOf(selectedEntity);
+      if (index > -1) {
+        container.removeChild(selectedEntity);
+        entities.splice(index, 1);
+        selectedEntity = null;
+        
+        updateEntityList();
+        updateSelectedEntityInfo();
+        console.log('已刪除選中實體');
+      }
     }
     
     // === 座標驗證 ===
@@ -502,6 +917,8 @@
     // === 更新資訊顯示 ===
     function updateInfo() {
       // Info panel removed - status information no longer displayed
+      // But we still update entity list when this is called
+      updateEntityList();
     }
     
     // === 攝影機變換更新 ===
