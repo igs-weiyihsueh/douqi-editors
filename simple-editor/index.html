@@ -176,6 +176,98 @@
       background: #5a6375;
     }
     
+    /* 右側屬性面板 */
+    .right-sidebar {
+      width: 250px;
+      background: #2d3748;
+      border-left: 2px solid #4a5568;
+      box-shadow: -2px 0 10px rgba(0,0,0,0.3);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .right-sidebar-header {
+      height: 60px;
+      background: #1a202c;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 2px solid #4a5568;
+    }
+    
+    .right-sidebar-header h2 {
+      font-size: 16px;
+      font-weight: bold;
+      color: #e2e8f0;
+      margin: 0;
+      text-align: center;
+    }
+    
+    .right-sidebar-content {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    
+    .property-group {
+      margin-bottom: 20px;
+    }
+    
+    .property-group h3 {
+      font-size: 14px;
+      color: #a0aec0;
+      font-weight: 600;
+      margin-bottom: 10px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid #4a5568;
+    }
+    
+    .property-item {
+      margin-bottom: 12px;
+    }
+    
+    .property-label {
+      display: block;
+      font-size: 12px;
+      color: #cbd5e1;
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+    
+    .property-input {
+      width: 100%;
+      background: #1a202c;
+      border: 1px solid #4a5568;
+      border-radius: 4px;
+      padding: 6px 8px;
+      color: #e2e8f0;
+      font-size: 12px;
+    }
+    
+    .property-input:focus {
+      outline: none;
+      border-color: #3182ce;
+      box-shadow: 0 0 0 2px rgba(49, 130, 206, 0.2);
+    }
+    
+    .delete-button {
+      width: 100%;
+      background: #e53e3e;
+      color: white;
+      border: none;
+      padding: 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      margin-top: 10px;
+    }
+    
+    .delete-button:hover {
+      background: #c53030;
+    }
+    
     .main-area {
       display: flex;
       flex: 1;
@@ -303,9 +395,7 @@
     </div>
     
     <div class="toolbar-group">
-      <label>顯示:</label>
-      <button onclick="toggleGrid()" class="secondary">切換網格</button>
-      <button onclick="toggleBounds()" class="secondary">切換邊界</button>
+      <button onclick="generateObject()">生成物件</button>
     </div>
     
     <div class="toolbar-group">
@@ -327,20 +417,6 @@
             <p style="color: #a0aec0; font-size: 12px; margin: 0; padding: 10px;">目前沒有物件</p>
           </div>
         </div>
-        
-        <div class="sidebar-group">
-          <h3>實體工具</h3>
-          <button class="sidebar-button" onclick="addTestEntity('enemy')">添加敵人</button>
-          <button class="sidebar-button" onclick="addTestEntity('collectible')">添加道具</button>
-          <button class="sidebar-button" onclick="addTestEntity('powerup')">添加強化</button>
-        </div>
-        
-        <div class="sidebar-group">
-          <h3>屬性面板</h3>
-          <div id="selected-entity-info">
-            <p style="color: #a0aec0; font-size: 12px; margin: 0; padding: 10px;">未選中物件</p>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -351,6 +427,19 @@
         <div class="canvas-wrapper">
           <canvas id="game-canvas"></canvas>
           <button class="reset-camera-btn" onclick="resetCamera()">重置攝影機</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 右側屬性面板 -->
+    <div class="right-sidebar">
+      <div class="right-sidebar-header">
+        <h2>屬性面板</h2>
+      </div>
+      
+      <div class="right-sidebar-content">
+        <div id="property-panel">
+          <p style="color: #a0aec0; font-size: 12px; margin: 0; padding: 20px; text-align: center;">選擇物件以編輯屬性</p>
         </div>
       </div>
     </div>
@@ -409,14 +498,11 @@
       container.y = CANVAS_HEIGHT / 2;
       container.scale.set(cameraZoom);
       
-      // 創建背景網格
+      // 創建背景網格（預設顯示）
       createGrid();
       
-      // 創建關卡邊界
+      // 創建關卡邊界（預設顯示）
       createLevelBounds();
-      
-      // 更新資訊顯示
-      updateInfo();
       
       // 設定滑鼠/觸控事件
       setupInput();
@@ -426,6 +512,7 @@
       console.log(`遊戲世界: ${GAME_WORLD_WIDTH}x${GAME_WORLD_HEIGHT}`);
       console.log(`攝影機位置: (${cameraX}, ${cameraY})`);
       console.log(`攝影機縮放: ${cameraZoom}`);
+      console.log('網格和邊界預設顯示');
     }
     
     // === 創建關卡邊界顯示 ===
@@ -537,24 +624,36 @@
       console.log('攝影機已重置');
     }
     
-    // === 切換網格顯示 ===
-    function toggleGrid() {
-      showGrid = !showGrid;
-      if (container.gridContainer) {
-        container.gridContainer.visible = showGrid;
-      }
-      updateInfo();
-      console.log(`網格顯示: ${showGrid ? '開啟' : '關閉'}`);
-    }
-    
-    // === 切換邊界顯示 ===
-    function toggleBounds() {
-      showBounds = !showBounds;
-      if (container.boundsContainer) {
-        container.boundsContainer.visible = showBounds;
-      }
-      updateInfo();
-      console.log(`邊界顯示: ${showBounds ? '開啟' : '關閉'}`);
+    // === 生成物件 ===
+    function generateObject() {
+      const objectTypes = ['enemy', 'collectible', 'powerup'];
+      const colors = {
+        enemy: 0xff4444,
+        collectible: 0x44ff44,
+        powerup: 0x4444ff
+      };
+      
+      // 隨機選擇類型
+      const type = objectTypes[Math.floor(Math.random() * objectTypes.length)];
+      
+      // 在邊界內中間位置生成（稍微偏移避免重疊）
+      const offsetX = (Math.random() - 0.5) * 100; // ±50像素偏移
+      const offsetY = (Math.random() - 0.5) * 100;
+      
+      const entity = createEntity({
+        type: type,
+        x: offsetX,
+        y: offsetY,
+        color: colors[type],
+        name: `${type}_${entityIdCounter}`,
+        id: `entity_${entityIdCounter++}`
+      });
+      
+      entities.push(entity);
+      container.addChild(entity);
+      updateEntityList();
+      
+      console.log(`已生成 ${type} 於 (${offsetX.toFixed(0)}, ${offsetY.toFixed(0)})`);
     }
     
     // === 匯出關卡 ===
@@ -778,7 +877,94 @@
       entity.drawCircle(0, 0, size);
       
       updateEntityList();
-      updateSelectedEntityInfo();
+      updatePropertyPanel();
+    }
+    
+    // === 更新屬性面板 ===
+    function updatePropertyPanel() {
+      const propertyPanel = document.getElementById('property-panel');
+      
+      if (!selectedEntity) {
+        propertyPanel.innerHTML = '<p style="color: #a0aec0; font-size: 12px; margin: 0; padding: 20px; text-align: center;">選擇物件以編輯屬性</p>';
+        return;
+      }
+      
+      const data = selectedEntity.userData;
+      propertyPanel.innerHTML = `
+        <div class="property-group">
+          <h3>基本資訊</h3>
+          <div class="property-item">
+            <label class="property-label">類型</label>
+            <input type="text" class="property-input" value="${data.type}" readonly>
+          </div>
+          <div class="property-item">
+            <label class="property-label">ID</label>
+            <input type="text" class="property-input" value="${data.id}" readonly>
+          </div>
+        </div>
+        
+        <div class="property-group">
+          <h3>位置</h3>
+          <div class="property-item">
+            <label class="property-label">X 座標</label>
+            <input type="number" class="property-input" value="${Math.round(selectedEntity.x)}" onchange="updateEntityPosition('x', this.value)">
+          </div>
+          <div class="property-item">
+            <label class="property-label">Y 座標</label>
+            <input type="number" class="property-input" value="${Math.round(selectedEntity.y)}" onchange="updateEntityPosition('y', this.value)">
+          </div>
+        </div>
+        
+        <div class="property-group">
+          <h3>外觀</h3>
+          <div class="property-item">
+            <label class="property-label">顏色</label>
+            <input type="color" class="property-input" value="#${data.color.toString(16).padStart(6, '0')}" onchange="updateEntityColor(this.value)">
+          </div>
+        </div>
+        
+        <div class="property-group">
+          <h3>操作</h3>
+          <button class="delete-button" onclick="deleteSelectedEntity()">刪除物件</button>
+        </div>
+      `;
+    }
+    
+    // === 更新實體位置 ===
+    function updateEntityPosition(axis, value) {
+      if (!selectedEntity) return;
+      
+      const numValue = parseFloat(value);
+      if (isNaN(numValue)) return;
+      
+      if (axis === 'x') {
+        selectedEntity.x = numValue;
+      } else if (axis === 'y') {
+        selectedEntity.y = numValue;
+      }
+      
+      updateEntityList();
+      console.log(`實體位置已更新: ${axis}=${numValue}`);
+    }
+    
+    // === 更新實體顏色 ===
+    function updateEntityColor(colorHex) {
+      if (!selectedEntity) return;
+      
+      const colorValue = parseInt(colorHex.replace('#', ''), 16);
+      selectedEntity.userData.color = colorValue;
+      
+      // 重繪實體
+      selectedEntity.clear();
+      const data = selectedEntity.userData;
+      let size = data.type === 'enemy' ? 14 : data.type === 'collectible' ? 8 : 12;
+      selectedEntity.beginFill(colorValue);
+      selectedEntity.drawCircle(0, 0, size);
+      selectedEntity.endFill();
+      selectedEntity.lineStyle(3, 0xffff00, 1.0); // 保持選中高亮
+      selectedEntity.drawCircle(0, 0, size);
+      
+      console.log(`實體顏色已更新: #${colorHex}`);
     }
     
     // === 更新實體列表 ===
@@ -811,35 +997,6 @@
       });
     }
     
-    // === 更新選中實體資訊 ===
-    function updateSelectedEntityInfo() {
-      const infoContainer = document.getElementById('selected-entity-info');
-      
-      if (!selectedEntity) {
-        infoContainer.innerHTML = '<p style="color: #a0aec0; font-size: 12px; margin: 0; padding: 10px;">未選中物件</p>';
-        return;
-      }
-      
-      const data = selectedEntity.userData;
-      infoContainer.innerHTML = `
-        <div style="padding: 10px; font-size: 12px;">
-          <div style="margin-bottom: 8px;">
-            <strong>類型:</strong> ${data.type}
-          </div>
-          <div style="margin-bottom: 8px;">
-            <strong>位置:</strong> (${Math.round(selectedEntity.x)}, ${Math.round(selectedEntity.y)})
-          </div>
-          <div style="margin-bottom: 8px;">
-            <strong>顏色:</strong> #${data.color.toString(16).padStart(6, '0')}
-          </div>
-          <div style="margin-bottom: 8px;">
-            <strong>ID:</strong> ${data.id}
-          </div>
-          <button onclick="deleteSelectedEntity()" style="background: #e53e3e; color: white; border: none; padding: 4px 8px; border-radius: 2px; cursor: pointer; font-size: 11px;">刪除</button>
-        </div>
-      `;
-    }
-    
     // === 刪除選中實體 ===
     function deleteSelectedEntity() {
       if (!selectedEntity) return;
@@ -851,7 +1008,7 @@
         selectedEntity = null;
         
         updateEntityList();
-        updateSelectedEntityInfo();
+        updatePropertyPanel();
         console.log('已刪除選中實體');
       }
     }
