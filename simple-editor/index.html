@@ -469,6 +469,14 @@
     let entities = [];
     let showGrid = true;
     let showBounds = true;
+    // === 全域拖拽狀態 ===
+    let globalDragState = {
+      isDragging: false,
+      dragEntity: null,
+      dragStartPos: { x: 0, y: 0 },
+      entityStartPos: { x: 0, y: 0 },
+      dragThreshold: 3 // 像素閾值，區分點擊和拖拽
+    };
     let selectedEntity = null;
     let entityIdCounter = 0;
     
@@ -830,64 +838,27 @@
         id: data.id || `entity_${entityIdCounter++}`
       };
       
-      // 添加拖拽和選擇事件
+      // 添加實體交互事件
       graphics.interactive = true;
       graphics.buttonMode = true;
-      
-      // 拖拽相關變數
-      let isDragging = false;
-      let dragStartPos = { x: 0, y: 0 };
-      let entityStartPos = { x: 0, y: 0 };
       
       graphics.on('pointerdown', (event) => {
         // 選擇實體
         selectEntityObject(graphics);
         
-        // 開始拖拽
-        isDragging = true;
+        // 準備拖拽狀態
         const globalPos = event.data.global;
         const localPos = container.toLocal(globalPos);
         
-        dragStartPos.x = localPos.x;
-        dragStartPos.y = localPos.y;
-        entityStartPos.x = graphics.x;
-        entityStartPos.y = graphics.y;
+        globalDragState.dragEntity = graphics;
+        globalDragState.dragStartPos.x = localPos.x;
+        globalDragState.dragStartPos.y = localPos.y;
+        globalDragState.entityStartPos.x = graphics.x;
+        globalDragState.entityStartPos.y = graphics.y;
+        globalDragState.isDragging = false; // 還未開始拖拽，等待閾值
         
         // 阻止事件冒泡到canvas
         event.stopPropagation();
-      });
-      
-      graphics.on('pointermove', (event) => {
-        if (!isDragging) return;
-        
-        const globalPos = event.data.global;
-        const localPos = container.toLocal(globalPos);
-        
-        // 計算移動偏移
-        const deltaX = localPos.x - dragStartPos.x;
-        const deltaY = localPos.y - dragStartPos.y;
-        
-        // 更新實體位置
-        graphics.x = entityStartPos.x + deltaX;
-        graphics.y = entityStartPos.y + deltaY;
-        
-        // 限制在邊界內
-        const halfWidth = GAME_WORLD_WIDTH / 2;
-        const halfHeight = GAME_WORLD_HEIGHT / 2;
-        graphics.x = Math.max(-halfWidth + 20, Math.min(halfWidth - 20, graphics.x));
-        graphics.y = Math.max(-halfHeight + 20, Math.min(halfHeight - 20, graphics.y));
-        
-        // 更新屬性面板和列表
-        updatePropertyPanel();
-        updateEntityList();
-      });
-      
-      graphics.on('pointerup', () => {
-        isDragging = false;
-      });
-      
-      graphics.on('pointerupoutside', () => {
-        isDragging = false;
       });
       
       return graphics;
@@ -1154,73 +1125,135 @@
     function setupInput() {
       const canvas = document.getElementById('game-canvas');
       
-      let isPanning = false;
-      let lastPointerX = 0;
-      let lastPointerY = 0;
-      let panStarted = false;
+      let cameraPanState = {
+        isPanning: false,
+        lastPointerX: 0,
+        lastPointerY: 0,
+        panStarted: false
+      };
       
-      // 滑鼠/觸控按下 - 只在空白區域開始平移
+      // 全域pointer事件處理
       canvas.addEventListener('pointerdown', (e) => {
-        // 檢查點擊位置是否有實體
-        const rect = canvas.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-        const worldX = (mouseX - CANVAS_WIDTH / 2) / cameraZoom + cameraX;
-        const worldY = (mouseY - CANVAS_HEIGHT / 2) / cameraZoom + cameraY;
-        
-        // 檢查是否點擊到實體
-        let clickedEntity = false;
-        for (let entity of entities) {
-          const distance = Math.sqrt(
-            Math.pow(worldX - entity.x, 2) + 
-            Math.pow(worldY - entity.y, 2)
-          );
-          const entitySize = entity.userData.type === 'enemy' ? 14 : 
-                            entity.userData.type === 'collectible' ? 8 : 12;
-          if (distance <= entitySize) {
-            clickedEntity = true;
-            break;
-          }
-        }
-        
-        // 只有點擊空白區域才開始平移
-        if (!clickedEntity) {
-          isPanning = true;
-          lastPointerX = e.clientX;
-          lastPointerY = e.clientY;
+        // 如果沒有拖拽實體，則準備攝影機平移
+        if (!globalDragState.dragEntity) {
+          cameraPanState.isPanning = true;
+          cameraPanState.lastPointerX = e.clientX;
+          cameraPanState.lastPointerY = e.clientY;
+          cameraPanState.panStarted = false;
           canvas.style.cursor = 'grabbing';
-          panStarted = false;
         }
       });
       
-      // 滑鼠/觸控移動
       canvas.addEventListener('pointermove', (e) => {
-        if (isPanning) {
-          const deltaX = (e.clientX - lastPointerX) / cameraZoom;
-          const deltaY = (e.clientY - lastPointerY) / cameraZoom;
+        // 處理實體拖拽
+        if (globalDragState.dragEntity) {
+          const rect = canvas.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+          const worldX = (mouseX - CANVAS_WIDTH / 2) / cameraZoom + cameraX;
+          const worldY = (mouseY - CANVAS_HEIGHT / 2) / cameraZoom + cameraY;
+          
+          const deltaX = worldX - globalDragState.dragStartPos.x;
+          const deltaY = worldY - globalDragState.dragStartPos.y;
+          const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+          
+          // 檢查是否超過拖拽閾值
+          if (!globalDragState.isDragging && distance > globalDragState.dragThreshold) {
+            globalDragState.isDragging = true;
+            canvas.style.cursor = 'grabbing';
+          }
+          
+          // 如果正在拖拽，更新實體位置
+          if (globalDragState.isDragging) {
+            const entity = globalDragState.dragEntity;
+            entity.x = globalDragState.entityStartPos.x + deltaX;
+            entity.y = globalDragState.entityStartPos.y + deltaY;
+            
+            // 限制在邊界內
+            const halfWidth = GAME_WORLD_WIDTH / 2;
+            const halfHeight = GAME_WORLD_HEIGHT / 2;
+            entity.x = Math.max(-halfWidth + 20, Math.min(halfWidth - 20, entity.x));
+            entity.y = Math.max(-halfHeight + 20, Math.min(halfHeight - 20, entity.y));
+            
+            // 更新UI（節流更新，避免過於頻繁）
+            if (!entity._updateScheduled) {
+              entity._updateScheduled = true;
+              requestAnimationFrame(() => {
+                updatePropertyPanel();
+                updateEntityList();
+                entity._updateScheduled = false;
+              });
+            }
+          }
+        }
+        // 處理攝影機平移
+        else if (cameraPanState.isPanning) {
+          const deltaX = (e.clientX - cameraPanState.lastPointerX) / cameraZoom;
+          const deltaY = (e.clientY - cameraPanState.lastPointerY) / cameraZoom;
           
           // 只有移動距離超過閾值才開始平移
           const totalDelta = Math.abs(deltaX) + Math.abs(deltaY);
-          if (totalDelta > 2 || panStarted) {
-            panStarted = true;
+          if (totalDelta > 2 || cameraPanState.panStarted) {
+            cameraPanState.panStarted = true;
             cameraX -= deltaX;
             cameraY -= deltaY;
             updateCameraTransform();
           }
           
-          lastPointerX = e.clientX;
-          lastPointerY = e.clientY;
+          cameraPanState.lastPointerX = e.clientX;
+          cameraPanState.lastPointerY = e.clientY;
         }
       });
       
-      // 滑鼠/觸控放開
-      canvas.addEventListener('pointerup', () => {
-        isPanning = false;
-        panStarted = false;
+      canvas.addEventListener('pointerup', (e) => {
+        // 結束拖拽
+        if (globalDragState.dragEntity) {
+          // 如果沒有實際拖拽（距離小於閾值），則只是點擊選擇
+          if (!globalDragState.isDragging) {
+            // 點擊選擇已經在pointerdown中處理了
+          }
+          
+          // 重置拖拽狀態
+          globalDragState.isDragging = false;
+          globalDragState.dragEntity = null;
+          canvas.style.cursor = 'grab';
+        }
+        
+        // 結束攝影機平移
+        if (cameraPanState.isPanning) {
+          cameraPanState.isPanning = false;
+          cameraPanState.panStarted = false;
+          canvas.style.cursor = 'grab';
+        }
+      });
+      
+      // === 拖拽相關輔助函數 ===
+      
+      // 取消選擇並清理拖拽狀態
+      canvas.addEventListener('pointerleave', () => {
+        // 如果滑鼠離開canvas，結束所有交互
+        if (globalDragState.dragEntity) {
+          globalDragState.isDragging = false;
+          globalDragState.dragEntity = null;
+        }
+        if (cameraPanState.isPanning) {
+          cameraPanState.isPanning = false;
+          cameraPanState.panStarted = false;
+        }
         canvas.style.cursor = 'grab';
       });
       
-      // 滑鼠滾輪縮放
+      // 處理右鍵點擊（取消選擇）
+      canvas.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        if (selectedEntity && !globalDragState.isDragging) {
+          // 取消選擇
+          redrawEntity(selectedEntity, false);
+          selectedEntity = null;
+          updatePropertyPanel();
+          updateEntityList();
+        }
+      });
       canvas.addEventListener('wheel', (e) => {
         e.preventDefault();
         
@@ -1245,6 +1278,27 @@
       
       // 設定游標樣式
       canvas.style.cursor = 'grab';
+      
+      // 添加鍵盤快捷鍵支持
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          // ESC鍵取消選擇和拖拽
+          if (globalDragState.dragEntity) {
+            globalDragState.isDragging = false;
+            globalDragState.dragEntity = null;
+            canvas.style.cursor = 'grab';
+          }
+          if (selectedEntity) {
+            redrawEntity(selectedEntity, false);
+            selectedEntity = null;
+            updatePropertyPanel();
+            updateEntityList();
+          }
+        } else if (e.key === 'Delete' && selectedEntity) {
+          // Delete鍵刪除選中實體
+          deleteSelectedEntity();
+        }
+      });
     }
     
     // === 頁面載入完成後初始化 ===
