@@ -18,81 +18,82 @@
       overflow: hidden;
       margin: 0;
       display: flex;
+    }
+    
+    /* 左方工具列 */
+    .left-sidebar {
+      width: 250px;
+      background: #2d3748;
+      border-right: 2px solid #4a5568;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+      flex-shrink: 0;
+      display: flex;
       flex-direction: column;
     }
     
-    /* 頂部工具列 */
-    .toolbar {
-      height: 50px;
-      background: #2d3748;
-      border-bottom: 2px solid #4a5568;
+    .sidebar-header {
+      height: 60px;
+      background: #1a202c;
       display: flex;
       align-items: center;
-      padding: 0 20px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-      flex-shrink: 0;
+      justify-content: center;
+      border-bottom: 2px solid #4a5568;
     }
     
-    .toolbar h1 {
-      font-size: 18px;
+    .sidebar-header h1 {
+      font-size: 16px;
       font-weight: bold;
       color: #e2e8f0;
-      margin: 0 20px 0 0;
+      margin: 0;
+      text-align: center;
     }
     
-    .toolbar-group {
-      display: flex;
-      align-items: center;
-      margin-right: 30px;
-      gap: 10px;
+    .sidebar-content {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
     }
     
-    .toolbar-group label {
+    .sidebar-group {
+      margin-bottom: 25px;
+    }
+    
+    .sidebar-group h3 {
       font-size: 14px;
-      color: #cbd5e1;
-      font-weight: 500;
+      color: #a0aec0;
+      font-weight: 600;
+      margin-bottom: 10px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid #4a5568;
     }
     
-    .toolbar button {
+    .sidebar-button {
+      width: 100%;
       background: #4CAF50;
       color: white;
       border: none;
-      padding: 6px 12px;
+      padding: 10px 15px;
       border-radius: 4px;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 500;
+      margin-bottom: 8px;
       transition: background-color 0.2s;
     }
     
-    .toolbar button:hover {
+    .sidebar-button:hover {
       background: #45a049;
     }
     
-    .toolbar button:active {
-      background: #3d8b40;
-    }
-    
-    .toolbar button.secondary {
+    .sidebar-button.secondary {
       background: #718096;
     }
     
-    .toolbar button.secondary:hover {
+    .sidebar-button.secondary:hover {
       background: #5a6375;
     }
     
-    /* 座標資訊 */
-    .coord-info {
-      background: #1a202c;
-      color: #e2e8f0;
-      padding: 4px 8px;
-      border-radius: 3px;
-      font-family: monospace;
-      font-size: 12px;
-      border: 1px solid #4a5568;
-    }
-    
-    .container {
+    .main-area {
       flex: 1;
       display: flex;
       align-items: center;
@@ -124,7 +125,7 @@
       text-align: center;
       margin-bottom: 15px;
       color: #fff;
-      font-size: 18px;
+      font-size: 16px;
       font-weight: bold;
     }
     
@@ -139,85 +140,43 @@
       font-size: 12px;
       z-index: 100;
     }
-    
-    .controls {
-      text-align: center;
-      margin-top: 15px;
-    }
-    
-    .controls button {
-      background: #4CAF50;
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      margin: 0 5px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    
-    .controls button:hover {
-      background: #45a049;
-    }
-    
-    .controls button:disabled {
-      background: #666;
-      cursor: not-allowed;
-    }
   </style>
 </head>
 <body>
-  <!-- 頂部工具列 -->
-  <div class="toolbar">
-    <h1>鬥氣割草 - 關卡編輯器</h1>
-    
-    <div class="toolbar-group">
-      <label>關卡:</label>
-      <button onclick="loadTestLevel()">載入test_level</button>
-      <button onclick="clearLevel()" class="secondary">清除關卡</button>
+  <!-- 左方工具列 -->
+  <div class="left-sidebar">
+    <div class="sidebar-header">
+      <h1>鬥氣割草<br>關卡編輯器</h1>
     </div>
     
-    <div class="toolbar-group">
-      <label>視角:</label>
-      <button onclick="resetView()">重置攝影機</button>
-      <button onclick="fitToEntities()" class="secondary">適合實體</button>
-    </div>
-    
-    <div class="toolbar-group">
-      <label>顯示:</label>
-      <button onclick="toggleGrid()" class="secondary">切換網格</button>
-      <button onclick="toggleBounds()" class="secondary">切換邊界</button>
-      <button onclick="toggleCoordinates()" class="secondary">座標標註</button>
-    </div>
-    
-    <div class="toolbar-group">
-      <label>座標驗證:</label>
-      <div class="coord-info" id="mouse-coords">滑鼠: (0, 0)</div>
-      <div class="coord-info" id="camera-coords">攝影機: (0, 0)</div>
-    </div>
-    
-    <div class="toolbar-group">
-      <button onclick="validateCoordinates()">驗證座標對應</button>
+    <div class="sidebar-content">
+      <div class="sidebar-group">
+        <h3>關卡操作</h3>
+        <button class="sidebar-button" onclick="clearLevel()">清除關卡</button>
+      </div>
+      
+      <div class="sidebar-group">
+        <h3>顯示設定</h3>
+        <button class="sidebar-button secondary" onclick="toggleGrid()">切換網格</button>
+        <button class="sidebar-button secondary" onclick="toggleBounds()">切換邊界</button>
+      </div>
+      
+      <div class="sidebar-group">
+        <h3>工具</h3>
+        <button class="sidebar-button" onclick="validateCoordinates()">驗證座標對應</button>
+      </div>
     </div>
   </div>
 
-  <div class="container">
+  <div class="main-area">
     <div class="preview-container">
-      <div class="title">遊戲預覽 (16:9)</div>
+      <div class="title">關卡預覽</div>
       
       <div class="canvas-wrapper">
         <canvas id="game-canvas"></canvas>
         <div class="info" id="info">
           載入中...
         </div>
-      </div>
-      
-      <div class="controls">
-        <div style="text-align: center; margin-bottom: 10px;">
-          <div style="font-size: 14px; color: #aaa;">快捷操作</div>
-        </div>
-        <button onclick="loadTestLevel()">載入測試關卡</button>
-        <button onclick="resetView()">重置攝影機</button>
       </div>
     </div>
   </div>
@@ -230,9 +189,6 @@
     let entities = [];
     let showGrid = true;
     let showBounds = true;
-    let showCoordinates = false;
-    let coordinateLabels = [];
-    let mouseWorldPos = { x: 0, y: 0 };
     
     // === 遊戲場地設定 - 基於實際鬥氣割草配置 ===
     const GAME_WORLD_WIDTH = 1600;   // 實際遊戲世界寬度  
@@ -282,6 +238,9 @@
       // 更新資訊顯示
       updateInfo();
       
+      // 設定滑鼠/觸控事件
+      setupInput();
+      
       console.log('簡潔編輯器初始化完成');
       console.log(`Canvas: ${CANVAS_WIDTH}x${CANVAS_HEIGHT}`);
       console.log(`遊戲世界: ${GAME_WORLD_WIDTH}x${GAME_WORLD_HEIGHT}`);
@@ -303,8 +262,8 @@
         GAME_WORLD_HEIGHT
       );
       
-      // 繪製邊界角標
-      const cornerSize = 50;
+      // 繪製角落標記 (更清楚邊界)
+      const cornerSize = 40;
       graphics.lineStyle(6, 0xff6b6b, 1.0);
       
       // 左上角
@@ -373,237 +332,45 @@
       container.gridContainer = gridContainer;
     }
     
-    // === 載入測試關卡 ===
-    function loadTestLevel() {
-      // 清除舊實體
-      clearLevel();
-      
-      console.log('=== 載入test_level.json座標驗證 ===');
-      
-      // === 基於test_level.json中的實際座標轉換 ===
-      // 🚨 重要：使用實際遊戲的座標轉換邏輯
-      // 遊戲中: playerX = json[0] * 50 + 400, playerY = json[2] * 50 + 300
-      // 編輯器: 調整為以(0,0)為中心的座標系統
-      const testEntities = [
-        // === test_level.json原始實體 (使用正確的50x縮放+偏移) ===
-        { 
-          type: 'enemy', 
-          x: 3 * 50, y: 3 * 50,  // [3,0,3] → (150, 150)
-          color: 0xff4444, 
-          name: 'enemy_001',
-          jsonPos: '[3, 0, 3]',
-          description: '敵人-實際遊戲位置'
-        },
-        { 
-          type: 'collectible', 
-          x: 1 * 50, y: 1 * 50,  // [1,1,1] → (50, 50)
-          color: 0x44ff44, 
-          name: 'collectible_001',
-          jsonPos: '[1, 1, 1]', 
-          description: '道具-實際遊戲位置'
-        },
-        { 
-          type: 'powerup', 
-          x: -1 * 50, y: -1 * 50,  // [-1,1,-1] → (-50, -50)
-          color: 0x4444ff, 
-          name: 'powerup_001',
-          jsonPos: '[-1, 1, -1]',
-          description: '強化-實際遊戲位置'
-        },
-        
-        // === 遊戲世界中心點參考 (編輯器0,0 對應遊戲800,600) ===
-        { type: 'enemy', x: 0, y: 0, color: 0xffff00, name: 'editor_center', jsonPos: 'N/A', description: '編輯器中心(0,0)' },
-        
-        // === 遊戲座標系原點參考 (遊戲0,0 對應編輯器-800,-600) ===
-        { type: 'collectible', x: -800, y: -600, color: 0x00ffff, name: 'game_origin', jsonPos: 'N/A', description: '遊戲原點(0,0)' },
-        
-        // === 座標系統驗證點 ===
-        { type: 'powerup', x: -400, y: 0, color: 0x4444ff, name: 'left_ref', jsonPos: 'N/A', description: '左邊界參考' },
-        { type: 'powerup', x: 400, y: 0, color: 0x4444ff, name: 'right_ref', jsonPos: 'N/A', description: '右邊界參考' },
-        { type: 'collectible', x: 0, y: -300, color: 0x44ff44, name: 'top_ref', jsonPos: 'N/A', description: '上邊界參考' },
-        { type: 'collectible', x: 0, y: 300, color: 0x44ff44, name: 'bottom_ref', jsonPos: 'N/A', description: '下邊界參考' },
-        
-        // === 邊界檢驗點 ===
-        { type: 'enemy', x: -750, y: -550, color: 0xff8888, name: 'corner_tl', jsonPos: 'N/A', description: '左上角邊界' },
-        { type: 'enemy', x: 750, y: 550, color: 0xff8888, name: 'corner_br', jsonPos: 'N/A', description: '右下角邊界' }
-      ];
-      
-      testEntities.forEach((entityData, index) => {
-        const entity = createEntity(entityData);
-        entities.push(entity);
-        container.addChild(entity);
-        
-        console.log(`實體 ${index + 1}: ${entityData.name} | JSON座標: ${entityData.jsonPos} | 2D座標: (${entityData.x}, ${entityData.y}) | ${entityData.description}`);
-      });
-      
-      updateInfo();
-      console.log(`=== 載入完成：${entities.length}個實體 ===`);
-      
-      // 座標驗證提示
-      if (showCoordinates) {
-        createCoordinateLabels();
-      }
-    }
-    
-    // === 創建實體 ===
-    function createEntity(data) {
-      const graphics = new PIXI.Graphics();
-      
-      // 根據類型設定大小
-      let size = 10;
-      switch(data.type) {
-        case 'enemy': size = 14; break;
-        case 'item': size = 8; break;
-        case 'powerup': size = 12; break;
-      }
-      
-      // 繪製實體
-      graphics.beginFill(data.color);
-      graphics.drawCircle(0, 0, size);
-      graphics.endFill();
-      
-      // 繪製邊框
-      graphics.lineStyle(2, 0xffffff, 0.8);
-      graphics.drawCircle(0, 0, size);
-      
-      // 設定位置
-      graphics.x = data.x;
-      graphics.y = data.y;
-      
-      return graphics;
-    }
-    
-    // === 重置視角 ===
-    function resetView() {
-      // 重置攝影機到中心，縮放讓整個場地可見
-      cameraX = 0;
-      cameraY = 0; 
-      cameraZoom = 0.4;
-      
-      // 更新容器變換
-      updateCameraTransform();
-      updateInfo();
-      console.log('攝影機視角已重置');
-    }
-    
-    // === 更新攝影機變換 ===
-    function updateCameraTransform() {
-      // 攝影機縮放
-      container.scale.set(cameraZoom);
-      
-      // 攝影機位置 (注意：容器位移方向與攝影機移動方向相反)
-      container.x = CANVAS_WIDTH / 2 - cameraX * cameraZoom;
-      container.y = CANVAS_HEIGHT / 2 - cameraY * cameraZoom;
-    }
-    
     // === 清除關卡 ===
     function clearLevel() {
-      // 清除實體
+      // 移除所有實體
       entities.forEach(entity => {
         container.removeChild(entity);
-        entity.destroy();
       });
       entities = [];
-      
-      // 清除座標標註
-      clearCoordinateLabels();
       
       updateInfo();
       console.log('關卡已清除');
     }
     
-    // === 適合實體視角 ===
-    function fitToEntities() {
-      if (entities.length === 0) {
-        console.log('沒有實體可適合視角');
-        return;
+    // === 切換網格顯示 ===
+    function toggleGrid() {
+      showGrid = !showGrid;
+      if (container.gridContainer) {
+        container.gridContainer.visible = showGrid;
       }
-      
-      // 計算所有實體的邊界框
-      let minX = Infinity, maxX = -Infinity;
-      let minY = Infinity, maxY = -Infinity;
-      
-      entities.forEach(entity => {
-        minX = Math.min(minX, entity.x);
-        maxX = Math.max(maxX, entity.x);
-        minY = Math.min(minY, entity.y);
-        maxY = Math.max(maxY, entity.y);
-      });
-      
-      // 計算中心和縮放
-      cameraX = (minX + maxX) / 2;
-      cameraY = (minY + maxY) / 2;
-      
-      const rangeX = maxX - minX + 200; // 額外邊距
-      const rangeY = maxY - minY + 200;
-      
-      const zoomX = CANVAS_WIDTH / rangeX;
-      const zoomY = CANVAS_HEIGHT / rangeY;
-      cameraZoom = Math.min(zoomX, zoomY, 2.0); // 限制最大縮放
-      
-      updateCameraTransform();
-      updateInfo();
-      
-      console.log(`適合視角: 中心(${cameraX.toFixed(0)}, ${cameraY.toFixed(0)}), 縮放${cameraZoom.toFixed(2)}x`);
-    }
-    
-    // === 切換座標標註 ===
-    function toggleCoordinates() {
-      showCoordinates = !showCoordinates;
-      
-      if (showCoordinates) {
-        createCoordinateLabels();
-      } else {
-        clearCoordinateLabels();
-      }
-      
       updateInfo();
     }
     
-    // === 創建座標標註 ===
-    function createCoordinateLabels() {
-      clearCoordinateLabels();
-      
-      if (entities.length === 0) return;
-      
-      entities.forEach(entity => {
-        const label = new PIXI.Text(`(${entity.x}, ${entity.y})`, {
-          fontFamily: 'monospace',
-          fontSize: 12,
-          fill: 0xffffff,
-          stroke: 0x000000,
-          strokeThickness: 2,
-        });
-        
-        label.anchor.set(0.5, 1.5); // 標註在實體上方
-        label.x = entity.x;
-        label.y = entity.y;
-        
-        container.addChild(label);
-        coordinateLabels.push(label);
-      });
+    // === 切換邊界顯示 ===
+    function toggleBounds() {
+      showBounds = !showBounds;
+      if (container.boundsContainer) {
+        container.boundsContainer.visible = showBounds;
+      }
+      updateInfo();
     }
     
-    // === 清除座標標註 ===
-    function clearCoordinateLabels() {
-      coordinateLabels.forEach(label => {
-        container.removeChild(label);
-        label.destroy();
-      });
-      coordinateLabels = [];
-    }
-    
-    // === 座標驗證功能 ===
+    // === 座標驗證 ===
     function validateCoordinates() {
-      console.log('=== 詳細座標對應驗證 ===');
+      console.log('=== 座標系統驗證報告 ===');
       
-      // 1. 遊戲世界座標系統
-      console.log('🌍 遊戲世界座標系統:');
-      console.log(`  - 世界尺寸: ${GAME_WORLD_WIDTH} × ${GAME_WORLD_HEIGHT} 像素`);
-      console.log(`  - 座標原點: (0, 0) 位於世界中心`);
-      console.log(`  - X軸範圍: -${GAME_WORLD_WIDTH/2} 到 +${GAME_WORLD_WIDTH/2}`);
-      console.log(`  - Y軸範圍: -${GAME_WORLD_HEIGHT/2} 到 +${GAME_WORLD_HEIGHT/2}`);
-      console.log(`  - 座標系: 標準笛卡爾座標 (右X+, 下Y+)`);
+      // 1. 遊戲世界基本資訊
+      console.log('🌍 遊戲世界資訊:');
+      console.log(`  - 實際遊戲世界: ${GAME_WORLD_WIDTH}×${GAME_WORLD_HEIGHT}像素`);
+      console.log('  - 來源: LevelGameScene.ts setBounds()');
+      console.log('  - 座標系統: 原點(0,0)位於左上角，右X+，下Y+');
       
       // 2. test_level.json 3D→2D映射
       console.log('📄 test_level.json 3D→2D映射:');
@@ -623,6 +390,18 @@
         console.log(`  - ${example.json} → 遊戲${example.game} → 編輯器${example.editor} (${example.desc})`);
       });
       
+      // 3. 編輯器顯示設定
+      console.log('🖼️ 編輯器顯示:');
+      console.log(`  - Canvas尺寸: ${CANVAS_WIDTH}×${CANVAS_HEIGHT}像素 (16:9比例)`);
+      console.log(`  - 座標系統: 原點(0,0)位於中心，右X+，下Y+`);
+      console.log(`  - 當前攝影機: 位置(${cameraX}, ${cameraY}), 縮放${cameraZoom}x`);
+      
+      // 4. 攝影機與座標轉換
+      console.log('🎥 攝影機座標轉換:');
+      console.log(`  - 螢幕中心: (${CANVAS_WIDTH/2}, ${CANVAS_HEIGHT/2})`);
+      console.log(`  - 容器位置: (${container.x.toFixed(0)}, ${container.y.toFixed(0)})`);
+      console.log(`  - 容器縮放: ${container.scale.x.toFixed(2)}x`);
+      
       // 5. 座標系統對應關係
       console.log('🔄 座標系統對應關係:');
       console.log('  - 遊戲座標系: 原點(0,0)位於左上角，右X+，下Y+');
@@ -632,180 +411,99 @@
       console.log('  - ✅ 方向一致: 兩座標系都是右X+，下Y+');
       console.log('  - ✅ 縮放一致: 1遊戲像素 = 1編輯器像素');
       
-      // 3. Canvas顯示驗證
-      console.log('🖼️ Canvas顯示驗證:');
-      console.log(`  - Canvas尺寸: ${CANVAS_WIDTH} × ${CANVAS_HEIGHT} (16:9比例)`);
-      console.log(`  - 攝影機位置: (${cameraX.toFixed(0)}, ${cameraY.toFixed(0)})`);
-      console.log(`  - 攝影機縮放: ${cameraZoom.toFixed(3)}x`);
-      console.log(`  - 可視範圍: ${(CANVAS_WIDTH/cameraZoom).toFixed(0)} × ${(CANVAS_HEIGHT/cameraZoom).toFixed(0)} 像素`);
-      
-      // 4. 座標轉換驗證
-      console.log('🔄 座標轉換驗證:');
-      const testPoints = [
-        { world: { x: 0, y: 0 }, desc: '世界中心' },
-        { world: { x: 300, y: 300 }, desc: 'enemy_001位置' },
-        { world: { x: -100, y: -100 }, desc: 'powerup_001位置' }
-      ];
-      
-      testPoints.forEach(point => {
-        const screenX = CANVAS_WIDTH / 2 + (point.world.x - cameraX) * cameraZoom;
-        const screenY = CANVAS_HEIGHT / 2 + (point.world.y - cameraY) * cameraZoom;
-        console.log(`  - 世界(${point.world.x}, ${point.world.y}) → 螢幕(${screenX.toFixed(1)}, ${screenY.toFixed(1)}) [${point.desc}]`);
-      });
-      
-      // 5. 邊界對應檢查  
-      console.log('🎯 邊界對應檢查:');
-      console.log('  - 遊戲邊界: setBounds(0, 0, 1600, 1200)');
-      console.log('  - 編輯器邊界: 紅框(-800, -600) 到 (800, 600)');
-      console.log('  - 映射關係: 遊戲(0,0) ↔ 編輯器(-800,-600), 遊戲(1600,1200) ↔ 編輯器(800,600)');
-      console.log('  - ✅ 座標系統: 一致 (右X+, 下Y+)');
-      console.log('  - ✅ 尺寸比例: 1:1 (1像素 = 1像素)');
+      // 6. 邊界對應驗證
+      console.log('🎯 邊界對應驗證:');
+      console.log('  - 遊戲setBounds: (0,0) 到 (1600,1200)');
+      console.log('  - 編輯器邊界: (-800,-600) 到 (800,600)');
+      console.log('  - ✅ 完全對應: 編輯器紅邊框 = 實際遊戲邊界');
       
       console.log('=== 座標驗證完成 ===');
-      
-      // UI 提示
-      alert(`座標驗證完成！
-      
-🌍 遊戲世界: 1600×1200像素
-📍 座標原點: (0,0) 位於中心  
-🎮 實體映射: JSON 3D座標 × 100 = 2D像素
-📐 邊界對應: 1:1像素精確對應
-
-詳細結果請查看控制台 (F12)`);
-    }
-    function toggleBounds() {
-      showBounds = !showBounds;
-      if (container.boundsContainer) {
-        container.boundsContainer.visible = showBounds;
-      }
-      updateInfo();
-    }
-    
-    // === 切換網格顯示 ===
-    function toggleGrid() {
-      showGrid = !showGrid;
-      if (container.gridContainer) {
-        container.gridContainer.visible = showGrid;
-      }
-      updateInfo();
-    }
-    
-    // === 更新工具列座標顯示 ===
-    function updateToolbarCoordinates() {
-      const mouseCoords = document.getElementById('mouse-coords');
-      const cameraCoords = document.getElementById('camera-coords');
-      
-      if (mouseCoords) {
-        mouseCoords.textContent = `滑鼠: (${Math.round(mouseWorldPos.x)}, ${Math.round(mouseWorldPos.y)})`;
-      }
-      
-      if (cameraCoords) {
-        cameraCoords.textContent = `攝影機: (${Math.round(cameraX)}, ${Math.round(cameraY)})`;
-      }
     }
     
     // === 更新資訊顯示 ===
     function updateInfo() {
       const info = document.getElementById('info');
       info.innerHTML = `
-        Canvas: ${CANVAS_WIDTH}×${CANVAS_HEIGHT}<br>
-        遊戲世界: ${GAME_WORLD_WIDTH}×${GAME_WORLD_HEIGHT}<br>
-        攝影機: (${cameraX.toFixed(0)}, ${cameraY.toFixed(0)})<br>
-        縮放: ${cameraZoom.toFixed(2)}x<br>
-        實體: ${entities.length}<br>
+        實體數量: ${entities.length}<br>
         網格: ${showGrid ? '顯示' : '隱藏'}<br>
-        邊界: ${showBounds ? '顯示' : '隱藏'}<br>
-        座標: ${showCoordinates ? '顯示' : '隱藏'}
+        邊界: ${showBounds ? '顯示' : '隱藏'}
       `;
     }
     
-    // === 滑鼠交互 ===
-    function setupInteraction() {
+    // === 攝影機變換更新 ===
+    function updateCameraTransform() {
+      container.x = CANVAS_WIDTH / 2 - cameraX * cameraZoom;
+      container.y = CANVAS_HEIGHT / 2 - cameraY * cameraZoom;
+      container.scale.set(cameraZoom);
+    }
+    
+    // === 設定輸入控制 ===
+    function setupInput() {
       const canvas = document.getElementById('game-canvas');
-      let isDragging = false;
-      let lastPos = { x: 0, y: 0 };
       
-      // 滑鼠滾輪縮放 (攝影機縮放)
-      canvas.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        
-        // 獲取滑鼠在Canvas中的位置
-        const rect = canvas.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left - CANVAS_WIDTH / 2;
-        const mouseY = e.clientY - rect.top - CANVAS_HEIGHT / 2;
-        
-        // 計算世界座標中的滑鼠位置
-        const worldX = cameraX + mouseX / cameraZoom;
-        const worldY = cameraY + mouseY / cameraZoom;
-        
-        // 縮放
-        const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-        const newZoom = Math.max(0.1, Math.min(3.0, cameraZoom * zoomFactor));
-        
-        // 調整攝影機位置使縮放中心保持在滑鼠位置
-        cameraX = worldX - mouseX / newZoom;
-        cameraY = worldY - mouseY / newZoom;
-        cameraZoom = newZoom;
-        
-        updateCameraTransform();
-        updateInfo();
-      });
+      let isPanning = false;
+      let lastPointerX = 0;
+      let lastPointerY = 0;
       
-      // 滑鼠拖拽平移 (攝影機移動)
-      canvas.addEventListener('mousedown', (e) => {
-        isDragging = true;
-        lastPos.x = e.clientX;
-        lastPos.y = e.clientY;
+      // 滑鼠/觸控按下
+      canvas.addEventListener('pointerdown', (e) => {
+        isPanning = true;
+        lastPointerX = e.clientX;
+        lastPointerY = e.clientY;
         canvas.style.cursor = 'grabbing';
       });
       
-      canvas.addEventListener('mousemove', (e) => {
-        // 計算滑鼠世界座標
-        const rect = canvas.getBoundingClientRect();
-        const mouseCanvasX = e.clientX - rect.left - CANVAS_WIDTH / 2;
-        const mouseCanvasY = e.clientY - rect.top - CANVAS_HEIGHT / 2;
-        
-        mouseWorldPos.x = cameraX + mouseCanvasX / cameraZoom;
-        mouseWorldPos.y = cameraY + mouseCanvasY / cameraZoom;
-        
-        // 更新工具列顯示
-        updateToolbarCoordinates();
-        
-        if (isDragging) {
-          const deltaX = e.clientX - lastPos.x;
-          const deltaY = e.clientY - lastPos.y;
+      // 滑鼠/觸控移動
+      canvas.addEventListener('pointermove', (e) => {
+        if (isPanning) {
+          const deltaX = (e.clientX - lastPointerX) / cameraZoom;
+          const deltaY = (e.clientY - lastPointerY) / cameraZoom;
           
-          // 移動攝影機 (注意方向相反)
-          cameraX -= deltaX / cameraZoom;
-          cameraY -= deltaY / cameraZoom;
-          
-          lastPos.x = e.clientX;
-          lastPos.y = e.clientY;
+          cameraX -= deltaX;
+          cameraY -= deltaY;
           
           updateCameraTransform();
-          updateInfo();
+          
+          lastPointerX = e.clientX;
+          lastPointerY = e.clientY;
         }
       });
       
-      canvas.addEventListener('mouseup', () => {
-        isDragging = false;
+      // 滑鼠/觸控放開
+      canvas.addEventListener('pointerup', () => {
+        isPanning = false;
         canvas.style.cursor = 'grab';
       });
       
-      canvas.addEventListener('mouseleave', () => {
-        isDragging = false;
-        canvas.style.cursor = 'default';
+      // 滑鼠滾輪縮放
+      canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        // 計算滑鼠在世界座標中的位置 (縮放前)
+        const worldX = (mouseX - CANVAS_WIDTH / 2) / cameraZoom + cameraX;
+        const worldY = (mouseY - CANVAS_HEIGHT / 2) / cameraZoom + cameraY;
+        
+        // 縮放
+        const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+        cameraZoom = Math.max(0.1, Math.min(3.0, cameraZoom * zoomFactor));
+        
+        // 調整攝影機位置讓滑鼠位置保持不變
+        cameraX = worldX - (mouseX - CANVAS_WIDTH / 2) / cameraZoom;
+        cameraY = worldY - (mouseY - CANVAS_HEIGHT / 2) / cameraZoom;
+        
+        updateCameraTransform();
       });
       
+      // 設定游標樣式
       canvas.style.cursor = 'grab';
     }
     
-    // === 啟動編輯器 ===
-    window.addEventListener('load', () => {
-      initEditor();
-      setupInteraction();
-      loadTestLevel();
-    });
+    // === 頁面載入完成後初始化 ===
+    window.addEventListener('DOMContentLoaded', initEditor);
   </script>
 </body>
 </html>
