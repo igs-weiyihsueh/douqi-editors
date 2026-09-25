@@ -196,15 +196,8 @@
     }
     
     .info {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      background: rgba(0,0,0,0.8);
-      color: white;
-      padding: 8px 12px;
-      border-radius: 4px;
-      font-size: 12px;
-      z-index: 100;
+      /* Info panel removed - no longer displaying status information */
+      display: none;
     }
   </style>
 </head>
@@ -260,9 +253,6 @@
         
         <div class="canvas-wrapper">
           <canvas id="game-canvas"></canvas>
-          <div class="info" id="info">
-            載入中...
-          </div>
         </div>
       </div>
     </div>
@@ -511,13 +501,7 @@
     
     // === 更新資訊顯示 ===
     function updateInfo() {
-      const info = document.getElementById('info');
-      info.innerHTML = `
-        實體數量: ${entities.length}<br>
-        網格: ${showGrid ? '顯示' : '隱藏'}<br>
-        邊界: ${showBounds ? '顯示' : '隱藏'}<br>
-        攝影機: (${cameraX.toFixed(0)}, ${cameraY.toFixed(0)}) @ ${cameraZoom.toFixed(2)}x
-      `;
+      // Info panel removed - status information no longer displayed
     }
     
     // === 攝影機變換更新 ===
