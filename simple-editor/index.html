@@ -917,32 +917,35 @@
       console.log(`已添加 ${type}:`, entity.userData);
     }
     
+    // === 重繪實體（保持事件處理） ===
+    function redrawEntity(entity, isSelected = false) {
+      const data = entity.userData;
+      let size = data.type === 'enemy' ? 14 : data.type === 'collectible' ? 8 : 12;
+      
+      entity.clear();
+      entity.beginFill(data.color);
+      entity.drawCircle(0, 0, size);
+      entity.endFill();
+      
+      if (isSelected) {
+        entity.lineStyle(3, 0xffff00, 1.0); // 黃色高亮邊框
+      } else {
+        entity.lineStyle(2, 0xffffff, 0.8); // 普通白色邊框
+      }
+      entity.drawCircle(0, 0, size);
+    }
+    
     // === 選擇實體 ===
     function selectEntityObject(entity) {
       // 取消之前選中的實體高亮
       if (selectedEntity) {
-        selectedEntity.clear();
-        // 重繪原始實體
-        const data = selectedEntity.userData;
-        let size = data.type === 'enemy' ? 14 : data.type === 'collectible' ? 8 : 12;
-        selectedEntity.beginFill(data.color);
-        selectedEntity.drawCircle(0, 0, size);
-        selectedEntity.endFill();
-        selectedEntity.lineStyle(2, 0xffffff, 0.8);
-        selectedEntity.drawCircle(0, 0, size);
+        redrawEntity(selectedEntity, false);
       }
       
       selectedEntity = entity;
       
       // 高亮選中實體
-      entity.clear();
-      const data = entity.userData;
-      let size = data.type === 'enemy' ? 14 : data.type === 'collectible' ? 8 : 12;
-      entity.beginFill(data.color);
-      entity.drawCircle(0, 0, size);
-      entity.endFill();
-      entity.lineStyle(3, 0xffff00, 1.0); // 黃色高亮邊框
-      entity.drawCircle(0, 0, size);
+      redrawEntity(entity, true);
       
       updateEntityList();
       updatePropertyPanel();
@@ -1022,15 +1025,8 @@
       const colorValue = parseInt(colorHex.replace('#', ''), 16);
       selectedEntity.userData.color = colorValue;
       
-      // 重繪實體
-      selectedEntity.clear();
-      const data = selectedEntity.userData;
-      let size = data.type === 'enemy' ? 14 : data.type === 'collectible' ? 8 : 12;
-      selectedEntity.beginFill(colorValue);
-      selectedEntity.drawCircle(0, 0, size);
-      selectedEntity.endFill();
-      selectedEntity.lineStyle(3, 0xffff00, 1.0); // 保持選中高亮
-      selectedEntity.drawCircle(0, 0, size);
+      // 重繪實體（保持選中狀態）
+      redrawEntity(selectedEntity, true);
       
       console.log(`實體顏色已更新: #${colorHex}`);
     }
