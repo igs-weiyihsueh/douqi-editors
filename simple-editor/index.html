@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>簡潔關卡編輯器 - v6.1-debug</title>
+  <title>簡潔關卡編輯器 - v7.0-scale-accurate</title>
   <style>
     * {
       margin: 0;
@@ -651,6 +651,13 @@
     const CANVAS_WIDTH = 960;        // Canvas顯示寬度 (16:9)
     const CANVAS_HEIGHT = 540;       // Canvas顯示高度 (16:9)
     
+    // === 比例設定 - 與實際遊戲一致 ===
+    const PX_PER_UNIT = 50;          // 遊戲單位轉像素比例 (與EntitySpawner.ts一致)
+    const GAME_ORIGIN_X = 400;       // 遊戲世界原點X偏移 (與LevelManager.ts一致)
+    const GAME_ORIGIN_Y = 300;       // 遊戲世界原點Y偏移 (與LevelManager.ts一致)
+    const GAME_DESIGN_WIDTH = 1280;  // 遊戲設計解析度寬度
+    const GAME_DESIGN_HEIGHT = 720;  // 遊戲設計解析度高度
+    
     // === 攝影機設定 ===
     let cameraX = 0;                 // 攝影機X位置
     let cameraY = 0;                 // 攝影機Y位置  
@@ -702,6 +709,17 @@
       console.log(`遊戲世界: ${GAME_WORLD_WIDTH}x${GAME_WORLD_HEIGHT}`);
       console.log(`攝影機位置: (${cameraX}, ${cameraY})`);
       console.log(`攝影機縮放: ${cameraZoom}`);
+      console.log('=== 比例設定驗證 ===');
+      console.log(`像素/單位比例: ${PX_PER_UNIT}px/unit (與EntitySpawner.ts一致)`);
+      console.log(`遊戲世界原點偏移: (${GAME_ORIGIN_X}, ${GAME_ORIGIN_Y}) (與LevelManager.ts一致)`);
+      console.log(`設計解析度: ${GAME_DESIGN_WIDTH}x${GAME_DESIGN_HEIGHT}`);
+      console.log('=== 物件尺寸設定 (直徑) ===');
+      console.log('木箱/石頭 (障礙): 50px (25px半徑)');
+      console.log('炸彈 (敵人): 28px (14px半徑)'); 
+      console.log('=== 陣型間距設定 ===');
+      console.log('最小間距: 44px (基於敵人分離半徑)');
+      console.log('群組預設範圍: 60px (基於攻擊範圍44px + 安全間距)');
+      console.log('========================');
       console.log('網格和邊界預設顯示');
     }
     
@@ -980,11 +998,11 @@
       const container = new PIXI.Container();
       const graphics = new PIXI.Graphics();
       
-      // 獲取物件配置（如果直接傳入則使用，否則查找預設）
+      // 獲取物件配置（如果直接傳入則使用，否則查找預設）- 與實際遊戲比例一致
       const gameObjectTypes = {
-        wooden_box: { name: '木箱', label: '木', color: 0x8B4513, shape: 'square', size: 16 },
-        bomb: { name: '炸彈', label: '爆', color: 0xFF4444, shape: 'circle', size: 13 },
-        stone: { name: '石頭', label: '石', color: 0x808080, shape: 'hexagon', size: 16 }
+        wooden_box: { name: '木箱', label: '木', color: 0x8B4513, shape: 'square', size: 25 * 2 }, // 障礙物尺寸 25px * 2 (直徑)
+        bomb: { name: '炸彈', label: '爆', color: 0xFF4444, shape: 'circle', size: 14 * 2 }, // 一般敵人尺寸 14px * 2 (直徑)
+        stone: { name: '石頭', label: '石', color: 0x808080, shape: 'hexagon', size: 25 * 2 } // 障礙物尺寸 25px * 2 (直徑)
       };
       
       const config = gameObjectTypes[data.type] || gameObjectTypes.wooden_box;
@@ -1241,7 +1259,7 @@
           if (!cluster.count) cluster.count = 3;
           if (!cluster.objectType) cluster.objectType = 'wooden_box';
           if (!cluster.formation) cluster.formation = 'circle';
-          if (!cluster.radius) cluster.radius = 30;
+          if (!cluster.radius) cluster.radius = 60; // 預設基於遊戲範圍
           
           const objectTypes = {
             wooden_box: '木箱',
@@ -1283,7 +1301,7 @@
               </div>
               <div class="param-row">
                 <label>半徑:</label>
-                <input type="number" value="${cluster.radius || 30}" min="15" max="100" 
+                <input type="number" value="${cluster.radius || 60}" min="30" max="200" 
                        onchange="updateClusterParam(${index}, 'radius', parseInt(this.value))" />
               </div>
             </div>
@@ -1371,9 +1389,9 @@
       if (!selectedEntity) return;
       
       const gameObjectTypes = {
-        wooden_box: { name: '木箱', label: '木', color: 0x8B4513, shape: 'square', size: 16 },
-        bomb: { name: '炸彈', label: '爆', color: 0xFF4444, shape: 'circle', size: 13 },
-        stone: { name: '石頭', label: '石', color: 0x808080, shape: 'hexagon', size: 16 }
+        wooden_box: { name: '木箱', label: '木', color: 0x8B4513, shape: 'square', size: 25 * 2 }, // 障礙物尺寸
+        bomb: { name: '炸彈', label: '爆', color: 0xFF4444, shape: 'circle', size: 14 * 2 }, // 一般敵人尺寸
+        stone: { name: '石頭', label: '石', color: 0x808080, shape: 'hexagon', size: 25 * 2 } // 障礙物尺寸
       };
       
       const config = gameObjectTypes[type];
@@ -1413,7 +1431,7 @@
         formation: 'circle',
         centerX: selectedEntity.x + 50,
         centerY: selectedEntity.y + 50,
-        radius: 30
+        radius: 60 // 基於遊戲攻擊範圍44px + 安全間距
       };
       
       selectedEntity.userData.clusters.push(newCluster);
@@ -1502,7 +1520,7 @@
       if (typeof cluster.centerX === 'undefined') {
         cluster.centerX = 400 + index * 80;
         cluster.centerY = 300 + index * 40;
-        cluster.radius = 30;
+        cluster.radius = 60; // 重設為基於遊戲範圍的預設值
         console.log(`補全位置數據: (${cluster.centerX}, ${cluster.centerY})`);
       }
       
@@ -1565,7 +1583,7 @@
       // 2. 繪製範圍圓圈
       const rangeCircle = new PIXI.Graphics();
       rangeCircle.lineStyle(1, 0x00ff00, 0.3);
-      rangeCircle.drawCircle(0, 0, cluster.radius || 30);
+      rangeCircle.drawCircle(0, 0, cluster.radius || 60); // 預設基於遊戲範圍
       rangeCircle.x = cluster.centerX;
       rangeCircle.y = cluster.centerY;
       clusterGroup.addChild(rangeCircle);
@@ -1580,12 +1598,13 @@
       window.clusterContainer.addChild(clusterGroup);
     }
     
-    // === 陣型計算函數 ===
+    // === 陣型計算函數 - 基於實際遊戲數值 ===
     function calculateFormationPositions(centerX, centerY, count, formation, radius) {
       const positions = [];
       
       switch (formation) {
         case 'circle':
+          // 圓形陣型：使用指定半徑
           for (let i = 0; i < count; i++) {
             const angle = (i / count) * Math.PI * 2;
             const x = centerX + Math.cos(angle) * radius;
@@ -1595,20 +1614,22 @@
           break;
           
         case 'line':
-          const spacing = radius * 1.5;
-          const totalWidth = (count - 1) * spacing;
+          // 直線陣型：間距基於敵人分離半徑 (44px) 
+          const lineSpacing = Math.max(44, radius * 0.8); // 最小間距44px，或半徑的80%
+          const totalWidth = (count - 1) * lineSpacing;
           const startX = centerX - totalWidth / 2;
           for (let i = 0; i < count; i++) {
             positions.push({
-              x: startX + i * spacing,
+              x: startX + i * lineSpacing,
               y: centerY
             });
           }
           break;
           
         case 'square':
+          // 方形陣型：基於敵人分離距離
           const side = Math.ceil(Math.sqrt(count));
-          const squareSpacing = radius * 1.2;
+          const squareSpacing = Math.max(44, radius * 0.6); // 最小間距44px，或半徑的60%
           const squareWidth = (side - 1) * squareSpacing;
           const squareStartX = centerX - squareWidth / 2;
           const squareStartY = centerY - squareWidth / 2;
@@ -1637,11 +1658,11 @@
         cluster.radius
       );
       
-      // 獲取物件類型配置
+      // 獲取物件類型配置 - 與實際遊戲比例一致
       const gameObjectTypes = {
-        wooden_box: { label: '木', color: 0x8B4513, shape: 'square', size: 16 },
-        bomb: { label: '爆', color: 0xFF4444, shape: 'circle', size: 13 },
-        stone: { label: '石', color: 0x808080, shape: 'hexagon', size: 16 }
+        wooden_box: { label: '木', color: 0x8B4513, shape: 'square', size: 25 * 2 }, // 障礙物尺寸
+        bomb: { label: '爆', color: 0xFF4444, shape: 'circle', size: 14 * 2 }, // 一般敵人尺寸
+        stone: { label: '石', color: 0x808080, shape: 'hexagon', size: 25 * 2 } // 障礙物尺寸
       };
       
       const config = gameObjectTypes[cluster.objectType] || gameObjectTypes.wooden_box;
