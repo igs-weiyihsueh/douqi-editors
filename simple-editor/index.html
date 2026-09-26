@@ -676,15 +676,16 @@
     
     // === 生成物件 ===
     function generateObject() {
-      const objectTypes = ['enemy', 'collectible', 'powerup'];
-      const colors = {
-        enemy: 0xff4444,
-        collectible: 0x44ff44,
-        powerup: 0x4444ff
+      const objectTypes = ['wooden_box', 'bomb', 'stone'];
+      const gameObjectTypes = {
+        wooden_box: { name: '木箱', label: '木', color: 0x8B4513, shape: 'square', size: 16 },
+        bomb: { name: '炸彈', label: '爆', color: 0xFF4444, shape: 'circle', size: 14 },
+        stone: { name: '石頭', label: '石', color: 0x808080, shape: 'hexagon', size: 18 }
       };
       
       // 隨機選擇類型
       const type = objectTypes[Math.floor(Math.random() * objectTypes.length)];
+      const config = gameObjectTypes[type];
       
       // 在邊界內中間位置生成（稍微偏移避免重疊）
       const offsetX = (Math.random() - 0.5) * 100; // ±50像素偏移
@@ -694,8 +695,11 @@
         type: type,
         x: offsetX,
         y: offsetY,
-        color: colors[type],
-        name: `${type}_${entityIdCounter}`,
+        color: config.color,
+        shape: config.shape,
+        size: config.size,
+        label: config.label,
+        name: `${config.name}_${entityIdCounter}`,
         id: `entity_${entityIdCounter++}`
       });
       
@@ -703,7 +707,7 @@
       container.addChild(entity);
       updateEntityList();
       
-      console.log(`已生成 ${type} 於 (${offsetX.toFixed(0)}, ${offsetY.toFixed(0)})`);
+      console.log(`已生成 ${config.name} 於 (${offsetX.toFixed(0)}, ${offsetY.toFixed(0)})`);
     }
     
     // === 匯出關卡 ===
@@ -796,29 +800,26 @@
     function loadTestLevel() {
       clearLevel();
       
-      console.log('=== 載入test_level.json座標驗證 ===');
+      console.log('=== 載入破壞類物件測試 ===');
       
       const testEntities = [
         { 
-          type: 'enemy', 
-          x: 3 * 50, y: 3 * 50,  // [3,0,3] → (150, 150)
-          color: 0xff4444, 
-          name: 'enemy_001',
-          id: 'enemy_001'
+          type: 'wooden_box', 
+          x: 100, y: -50,  // 右上方
+          name: '測試木箱',
+          id: 'box_001'
         },
         { 
-          type: 'collectible', 
-          x: 1 * 50, y: 1 * 50,  // [1,1,1] → (50, 50)
-          color: 0x44ff44, 
-          name: 'collectible_001',
-          id: 'collectible_001'
+          type: 'bomb', 
+          x: -80, y: 60,  // 左下方
+          name: '測試炸彈',
+          id: 'bomb_001'
         },
         { 
-          type: 'powerup', 
-          x: -1 * 50, y: -1 * 50,  // [-1,1,-1] → (-50, -50)
-          color: 0x4444ff, 
-          name: 'powerup_001',
-          id: 'powerup_001'
+          type: 'stone', 
+          x: 0, y: 0,  // 中心
+          name: '測試石頭',
+          id: 'stone_001'
         }
       ];
       
@@ -827,70 +828,124 @@
         entities.push(entity);
         container.addChild(entity);
         
-        console.log(`實體 ${index + 1}: ${entityData.name} | 2D座標: (${entityData.x}, ${entityData.y})`);
+        console.log(`實體 ${index + 1}: ${entityData.name} | 位置: (${entityData.x}, ${entityData.y})`);
       });
       
       updateEntityList();
-      console.log(`=== 載入完成：${entities.length}個實體 ===`);
+      console.log(`=== 載入完成：${entities.length}個破壞類物件 ===`);
     }
     
     // === 創建實體 ===
     function createEntity(data) {
+      const container = new PIXI.Container();
       const graphics = new PIXI.Graphics();
       
-      // 根據類型設定大小
-      let size = 10;
-      switch(data.type) {
-        case 'enemy': size = 14; break;
-        case 'collectible': size = 8; break;
-        case 'powerup': size = 12; break;
-      }
+      // 獲取物件配置（如果直接傳入則使用，否則查找預設）
+      const gameObjectTypes = {
+        wooden_box: { name: '木箱', label: '木', color: 0x8B4513, shape: 'square', size: 16 },
+        bomb: { name: '炸彈', label: '爆', color: 0xFF4444, shape: 'circle', size: 14 },
+        stone: { name: '石頭', label: '石', color: 0x808080, shape: 'hexagon', size: 18 }
+      };
       
-      // 繪製實體
-      graphics.beginFill(data.color);
-      graphics.drawCircle(0, 0, size);
+      const config = gameObjectTypes[data.type] || gameObjectTypes.wooden_box;
+      const size = data.size || config.size;
+      const color = data.color || config.color;
+      const shape = data.shape || config.shape;
+      const label = data.label || config.label;
+      
+      // 繪製不同形狀
+      graphics.beginFill(color);
+      
+      switch(shape) {
+        case 'square':
+          graphics.drawRect(-size/2, -size/2, size, size);
+          break;
+        case 'circle':
+          graphics.drawCircle(0, 0, size/2);
+          break;
+        case 'hexagon':
+          // 繪製六角形
+          graphics.moveTo(size/2, 0);
+          for (let i = 1; i <= 6; i++) {
+            const angle = (i * Math.PI) / 3;
+            graphics.lineTo(size/2 * Math.cos(angle), size/2 * Math.sin(angle));
+          }
+          break;
+        default:
+          graphics.drawCircle(0, 0, size/2);
+      }
       graphics.endFill();
       
       // 繪製邊框
       graphics.lineStyle(2, 0xffffff, 0.8);
-      graphics.drawCircle(0, 0, size);
+      switch(shape) {
+        case 'square':
+          graphics.drawRect(-size/2, -size/2, size, size);
+          break;
+        case 'circle':
+          graphics.drawCircle(0, 0, size/2);
+          break;
+        case 'hexagon':
+          graphics.moveTo(size/2, 0);
+          for (let i = 1; i <= 6; i++) {
+            const angle = (i * Math.PI) / 3;
+            graphics.lineTo(size/2 * Math.cos(angle), size/2 * Math.sin(angle));
+          }
+          break;
+      }
+      
+      // 添加文字標籤
+      const text = new PIXI.Text(label, {
+        fontSize: Math.max(8, size * 0.6),
+        fill: 'white',
+        fontWeight: 'bold',
+        fontFamily: 'Arial'
+      });
+      text.anchor.set(0.5);
+      
+      // 將圖形和文字添加到容器
+      container.addChild(graphics);
+      container.addChild(text);
       
       // 設定位置
-      graphics.x = data.x;
-      graphics.y = data.y;
+      container.x = data.x;
+      container.y = data.y;
       
       // 儲存數據
-      graphics.userData = {
+      container.userData = {
         type: data.type,
-        color: data.color,
-        name: data.name || `${data.type}_${entityIdCounter++}`,
+        color: color,
+        shape: shape,
+        size: size,
+        label: label,
+        name: data.name || `${config.name}_${entityIdCounter++}`,
         id: data.id || `entity_${entityIdCounter++}`
       };
       
       // 添加實體交互事件
-      graphics.interactive = true;
-      graphics.buttonMode = true;
+      container.interactive = true;
+      container.buttonMode = true;
       
-      graphics.on('pointerdown', (event) => {
+      container.on('pointerdown', (event) => {
         // 選擇實體
-        selectEntityObject(graphics);
+        selectEntityObject(container);
         
         // 準備拖拽狀態
         const globalPos = event.data.global;
-        const localPos = container.toLocal(globalPos);
+        const localPos = container.parent.toLocal(globalPos);
         
-        globalDragState.dragEntity = graphics;
+        globalDragState.dragEntity = container;
         globalDragState.dragStartPos.x = localPos.x;
         globalDragState.dragStartPos.y = localPos.y;
-        globalDragState.entityStartPos.x = graphics.x;
-        globalDragState.entityStartPos.y = graphics.y;
+        globalDragState.entityStartPos.x = container.x;
+        globalDragState.entityStartPos.y = container.y;
         globalDragState.isDragging = false; // 還未開始拖拽，等待閾值
         
         // 阻止事件冒泡到canvas
         event.stopPropagation();
       });
       
-      return graphics;
+      return container;
     }
     
     // === 添加測試實體 ===
@@ -920,19 +975,73 @@
     // === 重繪實體（保持事件處理） ===
     function redrawEntity(entity, isSelected = false) {
       const data = entity.userData;
-      let size = data.type === 'enemy' ? 14 : data.type === 'collectible' ? 8 : 12;
       
-      entity.clear();
-      entity.beginFill(data.color);
-      entity.drawCircle(0, 0, size);
-      entity.endFill();
+      // 清除容器中的所有子元素，重新創建
+      entity.removeChildren();
       
-      if (isSelected) {
-        entity.lineStyle(3, 0xffff00, 1.0); // 黃色高亮邊框
-      } else {
-        entity.lineStyle(2, 0xffffff, 0.8); // 普通白色邊框
+      const graphics = new PIXI.Graphics();
+      const size = data.size || 16;
+      const color = data.color || 0xffffff;
+      const shape = data.shape || 'circle';
+      const label = data.label || '?';
+      
+      // 繪製形狀
+      graphics.beginFill(color);
+      
+      switch(shape) {
+        case 'square':
+          graphics.drawRect(-size/2, -size/2, size, size);
+          break;
+        case 'circle':
+          graphics.drawCircle(0, 0, size/2);
+          break;
+        case 'hexagon':
+          graphics.moveTo(size/2, 0);
+          for (let i = 1; i <= 6; i++) {
+            const angle = (i * Math.PI) / 3;
+            graphics.lineTo(size/2 * Math.cos(angle), size/2 * Math.sin(angle));
+          }
+          break;
+        default:
+          graphics.drawCircle(0, 0, size/2);
       }
-      entity.drawCircle(0, 0, size);
+      graphics.endFill();
+      
+      // 繪製邊框
+      if (isSelected) {
+        graphics.lineStyle(3, 0xffff00, 1.0); // 黃色高亮邊框
+      } else {
+        graphics.lineStyle(2, 0xffffff, 0.8); // 普通白色邊框
+      }
+      
+      switch(shape) {
+        case 'square':
+          graphics.drawRect(-size/2, -size/2, size, size);
+          break;
+        case 'circle':
+          graphics.drawCircle(0, 0, size/2);
+          break;
+        case 'hexagon':
+          graphics.moveTo(size/2, 0);
+          for (let i = 1; i <= 6; i++) {
+            const angle = (i * Math.PI) / 3;
+            graphics.lineTo(size/2 * Math.cos(angle), size/2 * Math.sin(angle));
+          }
+          break;
+      }
+      
+      // 添加文字標籤
+      const text = new PIXI.Text(label, {
+        fontSize: Math.max(8, size * 0.6),
+        fill: 'white',
+        fontWeight: 'bold',
+        fontFamily: 'Arial'
+      });
+      text.anchor.set(0.5);
+      
+      // 將圖形和文字重新添加到容器
+      entity.addChild(graphics);
+      entity.addChild(text);
     }
     
     // === 選擇實體 ===
@@ -961,11 +1070,11 @@
       }
       
       const data = selectedEntity.userData;
-      const objectTypes = ['enemy', 'collectible', 'powerup'];
+      const objectTypes = ['wooden_box', 'bomb', 'stone'];
       const typeNames = {
-        enemy: '敵人',
-        collectible: '道具', 
-        powerup: '強化'
+        wooden_box: '木箱',
+        bomb: '炸彈',
+        stone: '石頭'
       };
       
       // 生成種類選項
@@ -1033,29 +1142,29 @@
     function updateEntityType(type) {
       if (!selectedEntity) return;
       
-      const typeColors = {
-        enemy: 0xff4444,
-        collectible: 0x44ff44,
-        powerup: 0x4444ff
+      const gameObjectTypes = {
+        wooden_box: { name: '木箱', label: '木', color: 0x8B4513, shape: 'square', size: 16 },
+        bomb: { name: '炸彈', label: '爆', color: 0xFF4444, shape: 'circle', size: 14 },
+        stone: { name: '石頭', label: '石', color: 0x808080, shape: 'hexagon', size: 18 }
       };
       
-      const typeSizes = {
-        enemy: 12,
-        collectible: 8,
-        powerup: 10
-      };
+      const config = gameObjectTypes[type];
+      if (!config) return;
       
       // 更新實體數據
       selectedEntity.userData.type = type;
-      selectedEntity.userData.color = typeColors[type] || 0xffffff;
+      selectedEntity.userData.color = config.color;
+      selectedEntity.userData.shape = config.shape;
+      selectedEntity.userData.size = config.size;
+      selectedEntity.userData.label = config.label;
       
-      // 更新視覺外觀
+      // 重新繪製實體
       redrawEntity(selectedEntity, true);
       
       // 更新UI
       updateEntityList();
       
-      console.log(`實體種類已更新: ${type}`);
+      console.log(`實體種類已更新: ${config.name}`);
     }
     
     // === 更新實體列表 ===
