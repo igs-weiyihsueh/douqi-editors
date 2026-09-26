@@ -461,6 +461,13 @@
     .cluster-name {
       flex: 1;
       cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 2px;
+      transition: background-color 0.2s;
+    }
+    
+    .cluster-name:hover {
+      background: #2d3748;
     }
     
     .cluster-delete-btn {
@@ -1176,7 +1183,7 @@
       if (clusterCount > 0) {
         clusterListHtml = data.clusters.map((cluster, index) => 
           `<div class="simple-cluster-item">
-            <span class="cluster-name">${cluster.name}</span>
+            <span class="cluster-name" onclick="renameCluster(${index})" title="點擊重命名">${cluster.name}</span>
             <button class="cluster-delete-btn" onclick="deleteCluster(${index})" title="刪除群組">×</button>
           </div>`
         ).join('');
@@ -1319,6 +1326,24 @@
       updatePropertyPanel();
       
       console.log('已刪除群組:', cluster);
+    }
+    
+    function renameCluster(index) {
+      if (!selectedEntity || !selectedEntity.userData.clusters) return;
+      
+      const cluster = selectedEntity.userData.clusters[index];
+      if (!cluster) return;
+      
+      // 簡單的prompt重命名
+      const newName = prompt('請輸入新的群組名稱:', cluster.name);
+      if (newName && newName.trim() && newName !== cluster.name) {
+        cluster.name = newName.trim();
+        
+        // 更新屬性面板顯示
+        updatePropertyPanel();
+        
+        console.log('已重命名群組:', cluster);
+      }
     }
     
     // === 更新實體列表 ===
@@ -1675,6 +1700,7 @@
     window.deleteEntityFromList = deleteEntityFromList;
     window.addSimpleCluster = addSimpleCluster;
     window.deleteCluster = deleteCluster;
+    window.renameCluster = renameCluster;
   </script>
 </body>
 </html>
