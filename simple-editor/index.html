@@ -453,6 +453,34 @@
       margin-bottom: 4px;
       font-size: 12px;
       color: #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .cluster-name {
+      flex: 1;
+      cursor: pointer;
+    }
+    
+    .cluster-delete-btn {
+      background: #e53e3e;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 8px;
+    }
+    
+    .cluster-delete-btn:hover {
+      background: #c53030;
     }
     
     .cluster-placeholder {
@@ -1146,8 +1174,11 @@
       // 簡單的群組列表HTML
       let clusterListHtml = '';
       if (clusterCount > 0) {
-        clusterListHtml = data.clusters.map(cluster => 
-          `<div class="simple-cluster-item">${cluster.name}</div>`
+        clusterListHtml = data.clusters.map((cluster, index) => 
+          `<div class="simple-cluster-item">
+            <span class="cluster-name">${cluster.name}</span>
+            <button class="cluster-delete-btn" onclick="deleteCluster(${index})" title="刪除群組">×</button>
+          </div>`
         ).join('');
       } else {
         clusterListHtml = '<p style="color: #a0aec0; font-size: 11px; margin: 10px 0; text-align: center;">點擊上方按鈕新增群組</p>';
@@ -1273,6 +1304,21 @@
       updatePropertyPanel();
       
       console.log('已新增群組:', newCluster);
+    }
+    
+    function deleteCluster(index) {
+      if (!selectedEntity || !selectedEntity.userData.clusters) return;
+      
+      const cluster = selectedEntity.userData.clusters[index];
+      if (!cluster) return;
+      
+      // 刪除群組
+      selectedEntity.userData.clusters.splice(index, 1);
+      
+      // 更新屬性面板顯示
+      updatePropertyPanel();
+      
+      console.log('已刪除群組:', cluster);
     }
     
     // === 更新實體列表 ===
@@ -1628,6 +1674,7 @@
     window.updateEntityType = updateEntityType;
     window.deleteEntityFromList = deleteEntityFromList;
     window.addSimpleCluster = addSimpleCluster;
+    window.deleteCluster = deleteCluster;
   </script>
 </body>
 </html>
