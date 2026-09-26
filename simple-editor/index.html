@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>簡潔關卡編輯器 - v7.0-scale-accurate</title>
+  <title>簡潔關卡編輯器 - v7.1-boundary-correct</title>
   <style>
     * {
       margin: 0;
@@ -645,9 +645,10 @@
     let selectedEntity = null;
     let entityIdCounter = 0;
     
-    // === 遊戲場地設定 - 基於實際鬥氣割草配置 ===
-    const GAME_WORLD_WIDTH = 1600;   // 實際遊戲世界寬度  
-    const GAME_WORLD_HEIGHT = 1200;  // 實際遊戲世界高度
+    // === 遊戲場地設定 - 基於實際遊戲 arena 邊界 ===
+    // 參考: src/config.ts GameConfig.stage.arenaW/arenaH (玩家實際活動區域)
+    const GAME_WORLD_WIDTH = 1040;   // 實際遊戲 arena 寬度 (玩家活動區域)
+    const GAME_WORLD_HEIGHT = 600;   // 實際遊戲 arena 高度 (玩家活動區域)
     const CANVAS_WIDTH = 960;        // Canvas顯示寬度 (16:9)
     const CANVAS_HEIGHT = 540;       // Canvas顯示高度 (16:9)
     
@@ -661,7 +662,7 @@
     // === 攝影機設定 ===
     let cameraX = 0;                 // 攝影機X位置
     let cameraY = 0;                 // 攝影機Y位置  
-    let cameraZoom = 0.4;            // 攝影機縮放 (初始值讓整個場地可見)
+    let cameraZoom = 0.6;            // 攝影機縮放 (調整以適應較小的 arena 尺寸)
     
     // === 初始化 PIXI ===
     function initEditor() {
@@ -709,6 +710,10 @@
       console.log(`遊戲世界: ${GAME_WORLD_WIDTH}x${GAME_WORLD_HEIGHT}`);
       console.log(`攝影機位置: (${cameraX}, ${cameraY})`);
       console.log(`攝影機縮放: ${cameraZoom}`);
+      console.log('=== 邊界設定驗證 ===');
+      console.log(`遊戲世界尺寸: ${GAME_WORLD_WIDTH}x${GAME_WORLD_HEIGHT} (arena 活動區域)`);
+      console.log(`邊界內縮: 60px (基於 breakable.edgeInset)`);
+      console.log(`物件可放置區域: ${GAME_WORLD_WIDTH-120}x${GAME_WORLD_HEIGHT-120} (${(GAME_WORLD_WIDTH-120)/2}px內)`);
       console.log('=== 比例設定驗證 ===');
       console.log(`像素/單位比例: ${PX_PER_UNIT}px/unit (與EntitySpawner.ts一致)`);
       console.log(`遊戲世界原點偏移: (${GAME_ORIGIN_X}, ${GAME_ORIGIN_Y}) (與LevelManager.ts一致)`);
@@ -1931,11 +1936,13 @@
             entity.x = globalDragState.entityStartPos.x + deltaX;
             entity.y = globalDragState.entityStartPos.y + deltaY;
             
-            // 限制在邊界內
+            // 限制在邊界內 - 基於遊戲實際的 edgeInset 設定
             const halfWidth = GAME_WORLD_WIDTH / 2;
             const halfHeight = GAME_WORLD_HEIGHT / 2;
-            entity.x = Math.max(-halfWidth + 20, Math.min(halfWidth - 20, entity.x));
-            entity.y = Math.max(-halfHeight + 20, Math.min(halfHeight - 20, entity.y));
+            // 使用遊戲中 breakable.edgeInset = 60 作為物件邊界內縮
+            const EDGE_INSET = 60; // 參考 config.ts 中的 breakable.edgeInset
+            entity.x = Math.max(-halfWidth + EDGE_INSET, Math.min(halfWidth - EDGE_INSET, entity.x));
+            entity.y = Math.max(-halfHeight + EDGE_INSET, Math.min(halfHeight - EDGE_INSET, entity.y));
             
             // 更新UI（節流更新，避免過於頻繁）
             if (!entity._updateScheduled) {
@@ -1984,11 +1991,13 @@
             cluster.centerX = newX;
             cluster.centerY = newY;
             
-            // 限制在邊界內 - 與主物件相同的邊界處理
+            // 限制在邊界內 - 基於遊戲實際的 edgeInset 設定
             const halfWidth = GAME_WORLD_WIDTH / 2;
             const halfHeight = GAME_WORLD_HEIGHT / 2;
-            cluster.centerX = Math.max(-halfWidth + 20, Math.min(halfWidth - 20, cluster.centerX));
-            cluster.centerY = Math.max(-halfHeight + 20, Math.min(halfHeight - 20, cluster.centerY));
+            // 使用遊戲中 breakable.edgeInset = 60 作為群組中心邊界內縮
+            const EDGE_INSET = 60; // 參考 config.ts 中的 breakable.edgeInset
+            cluster.centerX = Math.max(-halfWidth + EDGE_INSET, Math.min(halfWidth - EDGE_INSET, cluster.centerX));
+            cluster.centerY = Math.max(-halfHeight + EDGE_INSET, Math.min(halfHeight - EDGE_INSET, cluster.centerY));
             
             // 更新UI（節流更新，避免過於頻繁）- 與主物件相同的優化
             if (!globalDragState.dragCluster._updateScheduled) {
