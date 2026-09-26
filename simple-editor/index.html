@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>簡潔關卡編輯器 - v8.2-cluster-properties</title>
+  <title>簡潔關卡編輯器 - v8.2.1-hotfix</title>
   <style>
     * {
       margin: 0;
@@ -1587,137 +1587,6 @@
       // 觸發群組可視化渲染
       renderClusterVisuals(selectedEntity);
     }
-        data.clusters = [];
-      }
-      
-      const objectTypes = ['wooden_box', 'bomb', 'stone'];
-      const typeNames = {
-        wooden_box: '木箱',
-        bomb: '炸彈',
-        stone: '石頭'
-      };
-      
-      // 生成種類選項
-      const typeOptions = objectTypes.map(type => 
-        `<option value="${type}" ${data.type === type ? 'selected' : ''}>${typeNames[type]}</option>`
-      ).join('');
-      
-      // 簡單的群組狀態顯示 - 加入生成狀態檢查
-      const clusterCount = data.clusters.length;
-      const generatedClusters = data.clusters.filter(cluster => cluster.generated);
-      const hasGeneratedClusters = generatedClusters.length > 0;
-      
-      let clusterStatus = '';
-      if (clusterCount === 0) {
-        clusterStatus = '暫無群組';
-      } else if (hasGeneratedClusters) {
-        clusterStatus = `${clusterCount}個群組 (已生成${generatedClusters.length}個)`;
-      } else {
-        clusterStatus = `${clusterCount}個群組 (預覽中)`;
-      }
-      
-      // 簡單的群組列表HTML
-      let clusterListHtml = '';
-      if (clusterCount > 0) {
-        clusterListHtml = data.clusters.map((cluster, index) => {
-          // 確保舊群組有默認參數
-          if (!cluster.count) cluster.count = 3;
-          if (!cluster.objectType) cluster.objectType = 'wooden_box';
-          if (!cluster.formation) cluster.formation = 'circle';
-          if (!cluster.radius) cluster.radius = 60; // 預設基於遊戲範圍
-          
-          const objectTypes = {
-            wooden_box: '木箱',
-            bomb: '炸彈', 
-            stone: '石頭'
-          };
-          const formations = {
-            circle: '圓形',
-            line: '直線',
-            square: '方形'
-          };
-          
-          return `<div class="cluster-item-expanded">
-            <div class="cluster-header">
-              <span class="cluster-name ${cluster.generated ? 'cluster-generated' : 'cluster-preview'}" onclick="renameCluster(${index})" title="${cluster.generated ? '已生成群組不可重命名' : '點擊重命名'}">
-                ${cluster.generated ? '✅' : '👁️'} ${cluster.name}
-              </span>
-              <button class="cluster-delete-btn" onclick="deleteCluster(${index})" title="${cluster.generated ? '已生成群組不可刪除' : '刪除群組'}" ${cluster.generated ? 'disabled' : ''}>×</button>
-            </div>
-            <div class="cluster-params">
-              <div class="param-row">
-                <label>數量:</label>
-                <input type="number" value="${cluster.count || 3}" min="1" max="20" 
-                       ${cluster.generated ? 'disabled' : `onchange="updateClusterParam(${index}, 'count', parseInt(this.value))"`} />
-              </div>
-              <div class="param-row">
-                <label>類型:</label>
-                <select ${cluster.generated ? 'disabled' : `onchange="updateClusterParam(${index}, 'objectType', this.value)"`}>
-                  <option value="wooden_box" ${cluster.objectType === 'wooden_box' ? 'selected' : ''}>木箱</option>
-                  <option value="bomb" ${cluster.objectType === 'bomb' ? 'selected' : ''}>炸彈</option>
-                  <option value="stone" ${cluster.objectType === 'stone' ? 'selected' : ''}>石頭</option>
-                </select>
-              </div>
-              <div class="param-row">
-                <label>陣型:</label>
-                <select ${cluster.generated ? 'disabled' : `onchange="updateClusterParam(${index}, 'formation', this.value)"`}>
-                  <option value="circle" ${cluster.formation === 'circle' ? 'selected' : ''}>圓形</option>
-                  <option value="line" ${cluster.formation === 'line' ? 'selected' : ''}>直線</option>
-                  <option value="square" ${cluster.formation === 'square' ? 'selected' : ''}>方形</option>
-                </select>
-              </div>
-              <div class="param-row">
-                <label>半徑:</label>
-                <input type="number" value="${cluster.radius || 60}" min="30" max="200" 
-                       ${cluster.generated ? 'disabled' : `onchange="updateClusterParam(${index}, 'radius', parseInt(this.value))"`} />
-              </div>
-              ${cluster.generated ? `
-              <div class="param-row">
-                <label>狀態:</label>
-                <span style="color: #68d391; font-size: 11px;">已於 ${new Date(cluster.generatedAt).toLocaleTimeString()} 生成</span>
-              </div>
-              ` : ''}
-            </div>
-          </div>`;
-        }).join('');
-      } else {
-        clusterListHtml = '<p style="color: #a0aec0; font-size: 11px; margin: 10px 0; text-align: center;">點擊上方按鈕新增群組</p>';
-      }
-      
-      propertyPanel.innerHTML = `
-        <div class="property-group">
-          <h3>基本資訊</h3>
-          <div class="property-item">
-            <label class="property-label">名稱</label>
-            <input type="text" class="property-input" value="${data.name || data.type}" onchange="updateEntityName(this.value)" placeholder="輸入物件名稱">
-          </div>
-          <div class="property-item">
-            <label class="property-label">種類</label>
-            <select class="property-input" onchange="updateEntityType(this.value)">
-              ${typeOptions}
-            </select>
-          </div>
-        </div>
-        
-        <div class="property-group">
-          <h3>群組管理</h3>
-          <div class="property-item">
-            <label class="property-label">狀態</label>
-            <span class="cluster-status">${clusterStatus}</span>
-          </div>
-          <div class="cluster-controls">
-            <button class="cluster-add-btn" onclick="addSimpleCluster()">+ 新增群組</button>
-            ${hasGeneratedClusters ? '' : `<button class="cluster-generate-btn" onclick="generateAllClusters()">🎯 生成物件</button>`}
-          </div>
-          <div class="cluster-list">
-            ${clusterListHtml}
-          </div>
-        </div>
-      `;
-      
-      // 觸發群組可視化渲染
-      renderClusterVisuals(selectedEntity);
-    }
     
     // === 群組屬性管理函數 ===
     function selectOwnerEntity() {
@@ -2891,6 +2760,15 @@
     window.renameCluster = renameCluster;
     window.updateClusterParam = updateClusterParam;
     window.renderClusterVisuals = renderClusterVisuals;
+    window.selectLevel = selectLevel;
+    window.exportLevel = exportLevel;
+    window.importLevel = importLevel;
+    window.generateAllClusters = generateAllClusters;
+    window.selectOwnerEntity = selectOwnerEntity;
+    window.selectClusterFromList = selectClusterFromList;
+    window.updateClusterProperty = updateClusterProperty;
+    window.generateSingleCluster = generateSingleCluster;
+    window.deleteCurrentCluster = deleteCurrentCluster;
   </script>
 </body>
 </html>
