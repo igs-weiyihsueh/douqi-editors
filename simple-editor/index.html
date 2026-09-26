@@ -677,6 +677,10 @@
       container = new PIXI.Container();
       app.stage.addChild(container);
       
+      // 創建群組可視化容器
+      window.clusterContainer = new PIXI.Container();
+      container.addChild(window.clusterContainer);
+      
       // 設定初始攝影機位置和縮放
       container.x = CANVAS_WIDTH / 2;
       container.y = CANVAS_HEIGHT / 2;
@@ -1310,6 +1314,9 @@
           </div>
         </div>
       `;
+      
+      // 觸發群組可視化渲染
+      renderClusterVisuals(selectedEntity);
     }
     
     // === 更新實體位置 ===
@@ -1395,7 +1402,10 @@
         name: '群組 ' + (selectedEntity.userData.clusters.length + 1),
         count: 3,
         objectType: 'wooden_box',
-        formation: 'circle'
+        formation: 'circle',
+        centerX: selectedEntity.x + 50,
+        centerY: selectedEntity.y + 50,
+        radius: 30
       };
       
       selectedEntity.userData.clusters.push(newCluster);
@@ -1448,7 +1458,62 @@
       // 更新參數
       cluster[param] = value;
       
+      // 重新繪製群組可視化
+      renderClusterVisuals(selectedEntity);
+      
       console.log(`群組 "${cluster.name}" 的 ${param} 已更新為:`, value);
+    }
+    
+    // === 群組可視化函數 ===
+    function renderClusterVisuals(entity) {
+      if (!entity || !entity.userData.clusters || !window.clusterContainer) return;
+      
+      // 清除現有的群組視覺元素
+      clearClusterVisuals();
+      
+      // 為每個群組創建視覺元素
+      entity.userData.clusters.forEach((cluster, index) => {
+        createClusterVisual(cluster, index);
+      });
+    }
+    
+    function clearClusterVisuals() {
+      if (!window.clusterContainer) return;
+      window.clusterContainer.removeChildren();
+    }
+    
+    function createClusterVisual(cluster, index) {
+      if (!window.clusterContainer) return;
+      
+      // 確保群組有位置數據
+      if (typeof cluster.centerX === 'undefined') {
+        cluster.centerX = 400 + index * 80;
+        cluster.centerY = 300 + index * 40;
+        cluster.radius = 30;
+      }
+      
+      // 創建群組容器
+      const clusterGroup = new PIXI.Container();
+      clusterGroup.name = `cluster_${index}`;
+      
+      // 1. 繪製群組中心點
+      const centerPoint = new PIXI.Graphics();
+      centerPoint.circle(0, 0, 8);
+      centerPoint.fill(0x00ff00); // 綠色中心點
+      centerPoint.x = cluster.centerX;
+      centerPoint.y = cluster.centerY;
+      clusterGroup.addChild(centerPoint);
+      
+      // 2. 繪製範圍圓圈
+      const rangeCircle = new PIXI.Graphics();
+      rangeCircle.circle(0, 0, cluster.radius || 30);
+      rangeCircle.stroke({ width: 1, color: 0x00ff00, alpha: 0.3 });
+      rangeCircle.x = cluster.centerX;
+      rangeCircle.y = cluster.centerY;
+      clusterGroup.addChild(rangeCircle);
+      
+      // 添加到群組容器
+      window.clusterContainer.addChild(clusterGroup);
     }
     
     // === 更新實體列表 ===
@@ -1807,6 +1872,7 @@
     window.deleteCluster = deleteCluster;
     window.renameCluster = renameCluster;
     window.updateClusterParam = updateClusterParam;
+    window.renderClusterVisuals = renderClusterVisuals;
   </script>
 </body>
 </html>
