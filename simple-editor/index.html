@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>簡潔關卡編輯器 - v8.2.1-hotfix</title>
+  <title>簡潔關卡編輯器 - v8.3-simplified</title>
   <style>
     * {
       margin: 0;
@@ -665,9 +665,7 @@
       </select>
     </div>
     
-    <div class="toolbar-group">
-      <button onclick="generateObject()">生成物件</button>
-    </div>
+
     
     <div class="toolbar-group">
       <button onclick="validateCoordinates()">驗證座標對應</button>
@@ -937,41 +935,41 @@
       console.log('攝影機已重置');
     }
     
-    // === 生成物件 ===
-    function generateObject() {
-      const objectTypes = ['wooden_box', 'bomb', 'stone'];
-      const gameObjectTypes = {
-        wooden_box: { name: '木箱', label: '木', color: 0x8B4513, shape: 'square', size: 16 },
-        bomb: { name: '炸彈', label: '爆', color: 0xFF4444, shape: 'circle', size: 13 },
-        stone: { name: '石頭', label: '石', color: 0x808080, shape: 'hexagon', size: 16 }
-      };
-      
-      // 隨機選擇類型
-      const type = objectTypes[Math.floor(Math.random() * objectTypes.length)];
-      const config = gameObjectTypes[type];
-      
-      // 在邊界內中間位置生成（稍微偏移避免重疊）
-      const offsetX = (Math.random() - 0.5) * 100; // ±50像素偏移
-      const offsetY = (Math.random() - 0.5) * 100;
-      
-      const entity = createEntity({
-        type: type,
-        x: offsetX,
-        y: offsetY,
-        color: config.color,
-        shape: config.shape,
-        size: config.size,
-        label: config.label,
-        name: `${config.name}_${entityIdCounter}`,
-        id: `entity_${entityIdCounter++}`
-      });
-      
-      entities.push(entity);
-      container.addChild(entity);
-      updateEntityList();
-      
-      console.log(`已生成 ${config.name} 於 (${offsetX.toFixed(0)}, ${offsetY.toFixed(0)})`);
-    }
+    // === 生成物件功能已移除 ===
+    // function generateObject() {
+    //   const objectTypes = ['wooden_box', 'bomb', 'stone'];
+    //   const gameObjectTypes = {
+    //     wooden_box: { name: '木箱', label: '木', color: 0x8B4513, shape: 'square', size: 16 },
+    //     bomb: { name: '炸彈', label: '爆', color: 0xFF4444, shape: 'circle', size: 13 },
+    //     stone: { name: '石頭', label: '石', color: 0x808080, shape: 'hexagon', size: 16 }
+    //   };
+    //   
+    //   // 隨機選擇類型
+    //   const type = objectTypes[Math.floor(Math.random() * objectTypes.length)];
+    //   const config = gameObjectTypes[type];
+    //   
+    //   // 在邊界內中間位置生成（稍微偏移避免重疊）
+    //   const offsetX = (Math.random() - 0.5) * 100; // ±50像素偏移
+    //   const offsetY = (Math.random() - 0.5) * 100;
+    //   
+    //   const entity = createEntity({
+    //     type: type,
+    //     x: offsetX,
+    //     y: offsetY,
+    //     color: config.color,
+    //     shape: config.shape,
+    //     size: config.size,
+    //     label: config.label,
+    //     name: `${config.name}_${entityIdCounter}`,
+    //     id: `entity_${entityIdCounter++}`
+    //   });
+    //   
+    //   entities.push(entity);
+    //   container.addChild(entity);
+    //   updateEntityList();
+    //   
+    //   console.log(`已生成 ${config.name} 於 (${offsetX.toFixed(0)}, ${offsetY.toFixed(0)})`);
+    // }
     
     // === 匯出關卡 ===
     function exportLevel() {
@@ -1428,14 +1426,13 @@
           <div class="property-item">
             <label class="property-label">群組名稱</label>
             <input type="text" class="property-input" value="${cluster.name}" 
-                   ${cluster.generated ? 'disabled' : 'onchange="updateClusterProperty(\'name\', this.value)"'} 
+                   onchange="updateClusterProperty('name', this.value)" 
                    placeholder="輸入群組名稱">
           </div>
           <div class="property-item">
             <label class="property-label">狀態</label>
             <span class="cluster-status-display">
-              ${cluster.generated ? '✅ 已生成' : '👁️ 預覽中'}
-              ${cluster.generated ? ` (${generatedObjectCount} 個物件)` : ''}
+              📝 設計中
             </span>
           </div>
         </div>
@@ -1445,11 +1442,11 @@
           <div class="property-item">
             <label class="property-label">物件數量</label>
             <input type="number" class="property-input" value="${cluster.count || 3}" min="1" max="20"
-                   ${cluster.generated ? 'disabled' : 'onchange="updateClusterProperty(\'count\', parseInt(this.value))"'}>
+                   onchange="updateClusterProperty('count', parseInt(this.value))">
           </div>
           <div class="property-item">
             <label class="property-label">物件類型</label>
-            <select class="property-input" ${cluster.generated ? 'disabled' : 'onchange="updateClusterProperty(\'objectType\', this.value)"'}>
+            <select class="property-input" onchange="updateClusterProperty('objectType', this.value)">
               <option value="wooden_box" ${cluster.objectType === 'wooden_box' ? 'selected' : ''}>木箱</option>
               <option value="bomb" ${cluster.objectType === 'bomb' ? 'selected' : ''}>炸彈</option>
               <option value="stone" ${cluster.objectType === 'stone' ? 'selected' : ''}>石頭</option>
@@ -1457,7 +1454,7 @@
           </div>
           <div class="property-item">
             <label class="property-label">陣型</label>
-            <select class="property-input" ${cluster.generated ? 'disabled' : 'onchange="updateClusterProperty(\'formation\', this.value)"'}>
+            <select class="property-input" onchange="updateClusterProperty('formation', this.value)">
               <option value="circle" ${cluster.formation === 'circle' ? 'selected' : ''}>圓形</option>
               <option value="line" ${cluster.formation === 'line' ? 'selected' : ''}>直線</option>
               <option value="square" ${cluster.formation === 'square' ? 'selected' : ''}>方形</option>
@@ -1466,27 +1463,13 @@
           <div class="property-item">
             <label class="property-label">半徑/間距</label>
             <input type="number" class="property-input" value="${cluster.radius || 60}" min="30" max="200"
-                   ${cluster.generated ? 'disabled' : 'onchange="updateClusterProperty(\'radius\', parseInt(this.value))"'}>
+                   onchange="updateClusterProperty('radius', parseInt(this.value))">
           </div>
-          ${cluster.generated ? `
-          <div class="property-item">
-            <label class="property-label">生成時間</label>
-            <span style="color: #68d391; font-size: 12px;">${new Date(cluster.generatedAt).toLocaleString()}</span>
-          </div>
-          ` : ''}
         </div>
         
         <div class="property-group">
           <h3>群組操作</h3>
-          ${!cluster.generated ? `
-          <button class="property-button primary" onclick="generateSingleCluster()">🎯 生成物件</button>
           <button class="property-button danger" onclick="deleteCurrentCluster()" style="margin-top: 8px;">🗑️ 刪除群組</button>
-          ` : `
-          <div style="color: #68d391; font-size: 12px; text-align: center; padding: 8px;">
-            群組已生成，不可修改<br>
-            如需修改請刪除主物件重新創建
-          </div>
-          `}
         </div>
       `;
     }
@@ -1515,16 +1498,12 @@
       
       // 簡單的群組狀態顯示 - 加入生成狀態檢查
       const clusterCount = data.clusters.length;
-      const generatedClusters = data.clusters.filter(cluster => cluster.generated);
-      const hasGeneratedClusters = generatedClusters.length > 0;
       
       let clusterStatus = '';
       if (clusterCount === 0) {
         clusterStatus = '暫無群組';
-      } else if (hasGeneratedClusters) {
-        clusterStatus = `${clusterCount}個群組 (已生成${generatedClusters.length}個)`;
       } else {
-        clusterStatus = `${clusterCount}個群組 (預覽中)`;
+        clusterStatus = `${clusterCount}個群組`;
       }
       
       // 簡單的群組列表HTML
@@ -1539,10 +1518,10 @@
           
           return `<div class="cluster-item-expanded">
             <div class="cluster-header">
-              <span class="cluster-name ${cluster.generated ? 'cluster-generated' : 'cluster-preview'}" onclick="selectClusterFromList(${index})" title="點擊選擇群組進行詳細編輯">
-                ${cluster.generated ? '✅' : '👁️'} ${cluster.name}
+              <span class="cluster-name" onclick="selectClusterFromList(${index})" title="點擊選擇群組進行詳細編輯">
+                📝 ${cluster.name}
               </span>
-              <button class="cluster-delete-btn" onclick="deleteCluster(${index})" title="${cluster.generated ? '已生成群組不可刪除' : '刪除群組'}" ${cluster.generated ? 'disabled' : ''}>×</button>
+              <button class="cluster-delete-btn" onclick="deleteCluster(${index})" title="刪除群組">×</button>
             </div>
             <div class="cluster-summary">
               ${cluster.count}個${typeNames[cluster.objectType] || '物件'} · ${cluster.formation === 'circle' ? '圓形' : cluster.formation === 'line' ? '直線' : '方形'}陣型
@@ -1576,7 +1555,6 @@
           </div>
           <div class="cluster-controls">
             <button class="cluster-add-btn" onclick="addSimpleCluster()">+ 新增群組</button>
-            ${hasGeneratedClusters ? '' : `<button class="cluster-generate-btn" onclick="generateAllClusters()">🎯 生成物件</button>`}
           </div>
           <div class="cluster-list">
             ${clusterListHtml}
@@ -1630,47 +1608,43 @@
       console.log(`群組 "${cluster.name}" 的 ${property} 已更新: ${oldValue} → ${value}`);
     }
     
-    function generateSingleCluster() {
-      if (!selectedCluster) return;
-      
-      const cluster = selectedCluster.cluster;
-      const clusterIndex = selectedCluster.clusterIndex;
-      
-      if (cluster.generated) {
-        console.warn(`群組 "${cluster.name}" 已經生成過了`);
-        return;
-      }
-      
-      console.log(`🎯 開始生成單個群組: ${cluster.name}`);
-      
-      const objectsCreated = generateClusterObjects(cluster, clusterIndex);
-      
-      if (objectsCreated > 0) {
-        // 標記群組為已生成
-        cluster.generated = true;
-        cluster.generatedAt = Date.now();
-        
-        // 清理預覽視覺
-        clearClusterVisuals();
-        
-        // 更新屬性面板和實體列表
-        updatePropertyPanel();
-        updateEntityList();
-        
-        console.log(`✅ 群組 "${cluster.name}" 已生成 ${objectsCreated} 個物件`);
-      }
-    }
+    // === 群組生成功能已移除 ===
+    // function generateSingleCluster() {
+    //   if (!selectedCluster) return;
+    //   
+    //   const cluster = selectedCluster.cluster;
+    //   const clusterIndex = selectedCluster.clusterIndex;
+    //   
+    //   if (cluster.generated) {
+    //     console.warn(`群組 "${cluster.name}" 已經生成過了`);
+    //     return;
+    //   }
+    //   
+    //   console.log(`🎯 開始生成單個群組: ${cluster.name}`);
+    //   
+    //   const objectsCreated = generateClusterObjects(cluster, clusterIndex);
+    //   
+    //   if (objectsCreated > 0) {
+    //     // 標記群組為已生成
+    //     cluster.generated = true;
+    //     cluster.generatedAt = Date.now();
+    //     
+    //     // 清理預覽視覺
+    //     clearClusterVisuals();
+    //     
+    //     // 更新屬性面板和實體列表
+    //     updatePropertyPanel();
+    //     updateEntityList();
+    //     
+    //     console.log(`✅ 群組 "${cluster.name}" 已生成 ${objectsCreated} 個物件`);
+    //   }
+    // }
     
     function deleteCurrentCluster() {
       if (!selectedCluster) return;
       
       const cluster = selectedCluster.cluster;
       const clusterIndex = selectedCluster.clusterIndex;
-      
-      if (cluster.generated) {
-        console.warn(`已生成的群組無法刪除: ${cluster.name}`);
-        return;
-      }
       
       const confirmMessage = `確定要刪除群組 "${cluster.name}" 嗎？`;
       if (!confirm(confirmMessage)) {
@@ -1757,55 +1731,55 @@
       console.log(`實體種類已更新: ${config.name}`);
     }
     
-    // === Stage 5：群組物件生成功能 ===
-    function generateAllClusters() {
-      if (!selectedEntity || !selectedEntity.userData.clusters) {
-        console.warn('沒有選中實體或群組可生成');
-        return;
-      }
-      
-      const clusters = selectedEntity.userData.clusters;
-      let generatedCount = 0;
-      let totalObjectsGenerated = 0;
-      
-      console.log(`🎯 開始生成群組物件 - 共 ${clusters.length} 個群組`);
-      
-      clusters.forEach((cluster, index) => {
-        // 跳過已生成的群組
-        if (cluster.generated) {
-          console.log(`跳過已生成的群組: ${cluster.name}`);
-          return;
-        }
-        
-        // 生成該群組的所有物件
-        const objectsCreated = generateClusterObjects(cluster, index);
-        
-        if (objectsCreated > 0) {
-          // 標記群組為已生成
-          cluster.generated = true;
-          cluster.generatedAt = Date.now();
-          generatedCount++;
-          totalObjectsGenerated += objectsCreated;
-          
-          console.log(`✅ 群組 "${cluster.name}" 已生成 ${objectsCreated} 個物件`);
-        }
-      });
-      
-      // 清理預覽視覺（只保留真實物件）
-      clearClusterVisuals();
-      
-      // 更新UI顯示
-      updatePropertyPanel();
-      updateEntityList();
-      
-      console.log(`🎉 群組生成完成！共生成 ${generatedCount} 個群組，${totalObjectsGenerated} 個物件`);
-      
-      // 顯示成功消息
-      if (generatedCount > 0) {
-        // 可以在這裡添加視覺反饋或通知
-        console.log(`群組物件生成成功：${generatedCount}個群組，${totalObjectsGenerated}個物件`);
-      }
-    }
+    // === Stage 5：群組物件生成功能已移除 ===
+    // function generateAllClusters() {
+    //   if (!selectedEntity || !selectedEntity.userData.clusters) {
+    //     console.warn('沒有選中實體或群組可生成');
+    //     return;
+    //   }
+    //   
+    //   const clusters = selectedEntity.userData.clusters;
+    //   let generatedCount = 0;
+    //   let totalObjectsGenerated = 0;
+    //   
+    //   console.log(`🎯 開始生成群組物件 - 共 ${clusters.length} 個群組`);
+    //   
+    //   clusters.forEach((cluster, index) => {
+    //     // 跳過已生成的群組
+    //     if (cluster.generated) {
+    //       console.log(`跳過已生成的群組: ${cluster.name}`);
+    //       return;
+    //     }
+    //     
+    //     // 生成該群組的所有物件
+    //     const objectsCreated = generateClusterObjects(cluster, index);
+    //     
+    //     if (objectsCreated > 0) {
+    //       // 標記群組為已生成
+    //       cluster.generated = true;
+    //       cluster.generatedAt = Date.now();
+    //       generatedCount++;
+    //       totalObjectsGenerated += objectsCreated;
+    //       
+    //       console.log(`✅ 群組 "${cluster.name}" 已生成 ${objectsCreated} 個物件`);
+    //     }
+    //   });
+    //   
+    //   // 清理預覽視覺（只保留真實物件）
+    //   clearClusterVisuals();
+    //   
+    //   // 更新UI顯示
+    //   updatePropertyPanel();
+    //   updateEntityList();
+    //   
+    //   console.log(`🎉 群組生成完成！共生成 ${generatedCount} 個群組，${totalObjectsGenerated} 個物件`);
+    //   
+    //   // 顯示成功消息
+    //   if (generatedCount > 0) {
+    //     // 可以在這裡添加視覺反饋或通知
+    //     console.log(`群組物件生成成功：${generatedCount}個群組，${totalObjectsGenerated}個物件`);
+    //   }
+    // }
     
     function generateClusterObjects(cluster, clusterIndex) {
       // 計算陣型位置
@@ -1917,12 +1891,6 @@
       const cluster = selectedEntity.userData.clusters[index];
       if (!cluster) return;
       
-      // 檢查是否已生成，已生成的群組不能刪除
-      if (cluster.generated) {
-        console.warn(`無法刪除已生成的群組: ${cluster.name}`);
-        return;
-      }
-      
       // 刪除群組
       selectedEntity.userData.clusters.splice(index, 1);
       
@@ -1937,12 +1905,6 @@
       
       const cluster = selectedEntity.userData.clusters[index];
       if (!cluster) return;
-      
-      // 檢查是否已生成，已生成的群組不能重命名
-      if (cluster.generated) {
-        console.warn(`已生成的群組無法重命名: ${cluster.name}`);
-        return;
-      }
       
       // 簡單的prompt重命名
       const newName = prompt('請輸入新的群組名稱:', cluster.name);
@@ -1961,12 +1923,6 @@
       
       const cluster = selectedEntity.userData.clusters[index];
       if (!cluster) return;
-      
-      // 檢查是否已生成，已生成的群組不能修改參數
-      if (cluster.generated) {
-        console.warn(`已生成的群組無法修改參數: ${cluster.name}`);
-        return;
-      }
       
       // 更新參數
       cluster[param] = value;
@@ -2748,7 +2704,7 @@
     window.addEventListener('DOMContentLoaded', initEditor);
     
     // === 全域函數暴露 ===
-    window.generateObject = generateObject;
+    // window.generateObject = generateObject; // 已移除
     window.clearLevel = clearLevel;
     window.resetCamera = resetCamera;
     window.validateCoordinates = validateCoordinates;
@@ -2763,11 +2719,11 @@
     window.selectLevel = selectLevel;
     window.exportLevel = exportLevel;
     window.importLevel = importLevel;
-    window.generateAllClusters = generateAllClusters;
+    // window.generateAllClusters = generateAllClusters; // 已移除
     window.selectOwnerEntity = selectOwnerEntity;
     window.selectClusterFromList = selectClusterFromList;
     window.updateClusterProperty = updateClusterProperty;
-    window.generateSingleCluster = generateSingleCluster;
+    // window.generateSingleCluster = generateSingleCluster; // 已移除
     window.deleteCurrentCluster = deleteCurrentCluster;
   </script>
 </body>
