@@ -1485,6 +1485,11 @@
       entity.userData.clusters.forEach((cluster, index) => {
         createClusterVisual(cluster, index);
       });
+      
+      // 確保群組容器在最頂層，這樣群組中心可以被點擊
+      if (window.clusterContainer.parent) {
+        window.clusterContainer.parent.setChildIndex(window.clusterContainer, window.clusterContainer.parent.children.length - 1);
+      }
     }
     
     function clearClusterVisuals() {
@@ -1540,8 +1545,24 @@
       dragHotspot.buttonMode = true;
       dragHotspot.cursor = 'move';
       
+      // 添加測試：在熱區上放一個半透明的調試圓圈
+      const debugCircle = new PIXI.Graphics();
+      debugCircle.beginFill(0xff0000, 0.1); // 紅色，10%透明
+      debugCircle.drawCircle(0, 0, 30);
+      debugCircle.endFill();
+      debugCircle.x = cluster.centerX;
+      debugCircle.y = cluster.centerY;
+      
       // 使用全域拖拽系統（與主物件相同）
       dragHotspot.on('pointerdown', (event) => {
+        console.log('🎯 群組中心熱區被點擊！');
+        
+        // 清除可能存在的主物件拖拽狀態（避免衝突）
+        if (globalDragState.dragEntity) {
+          console.log('清除主物件拖拽狀態:', globalDragState.dragEntity);
+          globalDragState.dragEntity = null;
+        }
+        
         // 準備群組拖拽狀態
         const globalPos = event.data.global;
         const localPos = dragHotspot.parent.toLocal(globalPos);
@@ -1556,13 +1577,17 @@
         // 視覺反饋
         centerPoint.alpha = 0.8;
         dragHotspot.alpha = 0.1;
+        debugCircle.alpha = 0.3; // 調試圓圈更明顯
         
         // 阻止事件冒泡
         event.stopPropagation();
-        console.log('群組中心拖拽準備就緒');
+        console.log('群組中心拖拽準備就緒，已清除主物件拖拽狀態');
       });
       
       clusterGroup.addChild(centerPoint);
+      
+      // 將拖拽熱區和調試圓圈添加到最後，確保它在最頂層可以捕獲事件
+      clusterGroup.addChild(debugCircle); // 添加調試可視化
       clusterGroup.addChild(dragHotspot); // 添加拖拽熱區
       
       // 2. 繪製範圍圓圈
@@ -1931,8 +1956,8 @@
           }
         }
         
-        // 處理群組中心拖拽（左鍵）- 與主物件相同的流暢體驗
-        if (globalDragState.dragCluster && !globalDragState.dragEntity) {
+        // 處理群組中心拖拽（左鍵）- 修復競態條件
+        if (globalDragState.dragCluster) {
           const rect = canvas.getBoundingClientRect();
           const mouseX = e.clientX - rect.left;
           const mouseY = e.clientY - rect.top;
@@ -1947,6 +1972,7 @@
           if (!globalDragState.isDragging && distance > globalDragState.dragThreshold) {
             globalDragState.isDragging = true;
             canvas.style.cursor = 'grabbing';
+            console.log('群組中心拖拽開始');
           }
           
           // 如果正在拖拽，更新群組中心位置
