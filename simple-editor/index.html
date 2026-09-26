@@ -1239,6 +1239,7 @@
           if (!cluster.count) cluster.count = 3;
           if (!cluster.objectType) cluster.objectType = 'wooden_box';
           if (!cluster.formation) cluster.formation = 'circle';
+          if (!cluster.radius) cluster.radius = 30;
           
           const objectTypes = {
             wooden_box: '木箱',
@@ -1277,6 +1278,11 @@
                   <option value="line" ${cluster.formation === 'line' ? 'selected' : ''}>直線</option>
                   <option value="square" ${cluster.formation === 'square' ? 'selected' : ''}>方形</option>
                 </select>
+              </div>
+              <div class="param-row">
+                <label>半徑:</label>
+                <input type="number" value="${cluster.radius || 30}" min="15" max="100" 
+                       onchange="updateClusterParam(${index}, 'radius', parseInt(this.value))" />
               </div>
             </div>
           </div>`;
@@ -1502,6 +1508,50 @@
       centerPoint.fill(0x00ff00); // 綠色中心點
       centerPoint.x = cluster.centerX;
       centerPoint.y = cluster.centerY;
+      
+      // 讓中心點可交互
+      centerPoint.interactive = true;
+      centerPoint.buttonMode = true;
+      centerPoint.cursor = 'move';
+      
+      // 添加拖拽功能
+      let dragging = false;
+      let dragOffset = { x: 0, y: 0 };
+      
+      centerPoint.on('pointerdown', (event) => {
+        dragging = true;
+        const position = event.data.global;
+        dragOffset.x = position.x - cluster.centerX;
+        dragOffset.y = position.y - cluster.centerY;
+        centerPoint.alpha = 0.8; // 拖拽時半透明
+      });
+      
+      centerPoint.on('pointermove', (event) => {
+        if (!dragging) return;
+        
+        const position = event.data.global;
+        cluster.centerX = position.x - dragOffset.x;
+        cluster.centerY = position.y - dragOffset.y;
+        
+        // 重新渲染整個群組
+        renderClusterVisuals(selectedEntity);
+      });
+      
+      centerPoint.on('pointerup', () => {
+        if (dragging) {
+          dragging = false;
+          centerPoint.alpha = 1.0;
+          console.log(`群組 "${cluster.name}" 移動到: (${Math.round(cluster.centerX)}, ${Math.round(cluster.centerY)})`);
+        }
+      });
+      
+      centerPoint.on('pointerupoutside', () => {
+        if (dragging) {
+          dragging = false;
+          centerPoint.alpha = 1.0;
+        }
+      });
+      
       clusterGroup.addChild(centerPoint);
       
       // 2. 繪製範圍圓圈
