@@ -919,7 +919,8 @@
         size: size,
         label: label,
         name: data.name || `${config.name}_${entityIdCounter++}`,
-        id: data.id || `entity_${entityIdCounter++}`
+        id: data.id || `entity_${entityIdCounter++}`,
+        clusters: data.clusters || []
       };
       
       // 添加實體交互事件
@@ -1510,6 +1511,15 @@
     
     // === 頁面載入完成後初始化 ===
     window.addEventListener('DOMContentLoaded', initEditor);
+    
+    // === 全域函數暴露 ===
+    window.generateObject = generateObject;
+    window.clearLevel = clearLevel;
+    window.resetCamera = resetCamera;
+    window.validateCoordinates = validateCoordinates;
+    window.updateEntityName = updateEntityName;
+    window.updateEntityType = updateEntityType;
+    window.deleteEntityFromList = deleteEntityFromList;
   </script>
 </body>
 </html>
