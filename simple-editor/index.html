@@ -1539,24 +1539,37 @@
         return;
       }
       
-      // 讓中心點可交互
+      // 讓中心點可交互 - 改善拖拽體驗
       centerPoint.interactive = true;
       centerPoint.buttonMode = true;
       centerPoint.cursor = 'move';
       
-      // 添加拖拽功能
+      // 增大拖拽熱區 - 創建一個更大的透明熱區
+      const dragHotspot = new PIXI.Graphics();
+      dragHotspot.beginFill(0x000000, 0); // 完全透明
+      dragHotspot.drawCircle(0, 0, 20); // 比中心點大的熱區
+      dragHotspot.endFill();
+      dragHotspot.x = cluster.centerX;
+      dragHotspot.y = cluster.centerY;
+      dragHotspot.interactive = true;
+      dragHotspot.buttonMode = true;
+      dragHotspot.cursor = 'move';
+      
+      // 添加拖拽功能到熱區（而非中心點本身）
       let dragging = false;
       let dragOffset = { x: 0, y: 0 };
       
-      centerPoint.on('pointerdown', (event) => {
+      dragHotspot.on('pointerdown', (event) => {
         dragging = true;
         const position = event.data.global;
         dragOffset.x = position.x - cluster.centerX;
         dragOffset.y = position.y - cluster.centerY;
         centerPoint.alpha = 0.8; // 拖拽時半透明
+        dragHotspot.alpha = 0.1; // 拖拽時顯示熱區範圍
+        console.log('開始拖拽群組中心');
       });
       
-      centerPoint.on('pointermove', (event) => {
+      dragHotspot.on('pointermove', (event) => {
         if (!dragging) return;
         
         const position = event.data.global;
@@ -1567,22 +1580,25 @@
         renderClusterVisuals(selectedEntity);
       });
       
-      centerPoint.on('pointerup', () => {
+      dragHotspot.on('pointerup', () => {
         if (dragging) {
           dragging = false;
           centerPoint.alpha = 1.0;
+          dragHotspot.alpha = 0.0; // 隱藏熱區
           console.log(`群組 "${cluster.name}" 移動到: (${Math.round(cluster.centerX)}, ${Math.round(cluster.centerY)})`);
         }
       });
       
-      centerPoint.on('pointerupoutside', () => {
+      dragHotspot.on('pointerupoutside', () => {
         if (dragging) {
           dragging = false;
           centerPoint.alpha = 1.0;
+          dragHotspot.alpha = 0.0;
         }
       });
       
       clusterGroup.addChild(centerPoint);
+      clusterGroup.addChild(dragHotspot); // 添加拖拽熱區
       
       // 2. 繪製範圍圓圈
       const rangeCircle = new PIXI.Graphics();
@@ -1594,6 +1610,9 @@
       
       // 3. 繪製陣型預覽
       drawFormationPreview(clusterGroup, cluster);
+      
+      // 4. 繪製主物件到群組中心的連線
+      drawOwnerConnection(clusterGroup, cluster, selectedEntity);
       
       // 添加到群組容器
       window.clusterContainer.addChild(clusterGroup);
@@ -1715,6 +1734,22 @@
           container.addChild(line);
         }
       });
+    }
+    
+    // === 繪製主物件連線 ===
+    function drawOwnerConnection(container, cluster, ownerEntity) {
+      if (!ownerEntity || !cluster) return;
+      
+      // 繪製從主物件到群組中心的連線
+      const ownerLine = new PIXI.Graphics();
+      ownerLine.lineStyle(2, 0xFFD700, 0.6); // 金黃色，較粗的線
+      ownerLine.moveTo(ownerEntity.x, ownerEntity.y);
+      ownerLine.lineTo(cluster.centerX, cluster.centerY);
+      
+      // 添加到容器最底層（這樣不會遮蓋其他元素）
+      container.addChildAt(ownerLine, 0);
+      
+      console.log(`主物件連線已創建: (${ownerEntity.x}, ${ownerEntity.y}) → (${cluster.centerX}, ${cluster.centerY})`);
     }
     
     // === 更新實體列表 ===
