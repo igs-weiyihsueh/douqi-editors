@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>簡潔關卡編輯器 - v6.1-coordinate-fix</title>
+  <title>簡潔關卡編輯器 - v6.1-debug</title>
   <style>
     * {
       margin: 0;
@@ -1538,6 +1538,12 @@
         const globalPos = event.data.global;
         const localPos = container.toLocal(globalPos); // 修正：使用container作為座標基準
         
+        // 調試日誌：驗證座標計算
+        console.log('🎯 綠點點擊調試：');
+        console.log('  global:', globalPos.x.toFixed(1), globalPos.y.toFixed(1));
+        console.log('  local:', localPos.x.toFixed(1), localPos.y.toFixed(1)); 
+        console.log('  cluster center:', cluster.centerX.toFixed(1), cluster.centerY.toFixed(1));
+        
         // 清除可能存在的主物件拖拽狀態（避免衝突）
         if (globalDragState.dragEntity) {
           globalDragState.dragEntity = null;
@@ -1943,8 +1949,19 @@
           // 如果正在拖拽，更新群組中心位置 - 與主物件相同的邏輯
           if (globalDragState.isDragging) {
             const { cluster } = globalDragState.dragCluster;
-            cluster.centerX = globalDragState.clusterStartPos.x + deltaX;
-            cluster.centerY = globalDragState.clusterStartPos.y + deltaY;
+            const newX = globalDragState.clusterStartPos.x + deltaX;
+            const newY = globalDragState.clusterStartPos.y + deltaY;
+            
+            // 調試日誌：驗證位置計算
+            if (Math.random() < 0.1) { // 只顯示10%的更新以避免日誌過多
+              console.log('🎯 群組拖拽更新：');
+              console.log('  world:', worldX.toFixed(1), worldY.toFixed(1));
+              console.log('  delta:', deltaX.toFixed(1), deltaY.toFixed(1));
+              console.log('  新位置:', newX.toFixed(1), newY.toFixed(1));
+            }
+            
+            cluster.centerX = newX;
+            cluster.centerY = newY;
             
             // 限制在邊界內 - 與主物件相同的邊界處理
             const halfWidth = GAME_WORLD_WIDTH / 2;
