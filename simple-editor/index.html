@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>簡潔關卡編輯器 - v8.3-simplified</title>
+  <title>簡潔關卡編輯器 - v8.4-corrected</title>
   <style>
     * {
       margin: 0;
@@ -665,8 +665,10 @@
       </select>
     </div>
     
+    <div class="toolbar-group">
+      <button onclick="generateObject()">生成物件</button>
+    </div>
 
-    
     <div class="toolbar-group">
       <button onclick="validateCoordinates()">驗證座標對應</button>
     </div>
@@ -935,41 +937,41 @@
       console.log('攝影機已重置');
     }
     
-    // === 生成物件功能已移除 ===
-    // function generateObject() {
-    //   const objectTypes = ['wooden_box', 'bomb', 'stone'];
-    //   const gameObjectTypes = {
-    //     wooden_box: { name: '木箱', label: '木', color: 0x8B4513, shape: 'square', size: 16 },
-    //     bomb: { name: '炸彈', label: '爆', color: 0xFF4444, shape: 'circle', size: 13 },
-    //     stone: { name: '石頭', label: '石', color: 0x808080, shape: 'hexagon', size: 16 }
-    //   };
-    //   
-    //   // 隨機選擇類型
-    //   const type = objectTypes[Math.floor(Math.random() * objectTypes.length)];
-    //   const config = gameObjectTypes[type];
-    //   
-    //   // 在邊界內中間位置生成（稍微偏移避免重疊）
-    //   const offsetX = (Math.random() - 0.5) * 100; // ±50像素偏移
-    //   const offsetY = (Math.random() - 0.5) * 100;
-    //   
-    //   const entity = createEntity({
-    //     type: type,
-    //     x: offsetX,
-    //     y: offsetY,
-    //     color: config.color,
-    //     shape: config.shape,
-    //     size: config.size,
-    //     label: config.label,
-    //     name: `${config.name}_${entityIdCounter}`,
-    //     id: `entity_${entityIdCounter++}`
-    //   });
-    //   
-    //   entities.push(entity);
-    //   container.addChild(entity);
-    //   updateEntityList();
-    //   
-    //   console.log(`已生成 ${config.name} 於 (${offsetX.toFixed(0)}, ${offsetY.toFixed(0)})`);
-    // }
+    // === 生成物件 ===
+    function generateObject() {
+      const objectTypes = ['wooden_box', 'bomb', 'stone'];
+      const gameObjectTypes = {
+        wooden_box: { name: '木箱', label: '木', color: 0x8B4513, shape: 'square', size: 16 },
+        bomb: { name: '炸彈', label: '爆', color: 0xFF4444, shape: 'circle', size: 13 },
+        stone: { name: '石頭', label: '石', color: 0x808080, shape: 'hexagon', size: 16 }
+      };
+      
+      // 隨機選擇類型
+      const type = objectTypes[Math.floor(Math.random() * objectTypes.length)];
+      const config = gameObjectTypes[type];
+      
+      // 在邊界內中間位置生成（稍微偏移避免重疊）
+      const offsetX = (Math.random() - 0.5) * 100; // ±50像素偏移
+      const offsetY = (Math.random() - 0.5) * 100;
+      
+      const entity = createEntity({
+        type: type,
+        x: offsetX,
+        y: offsetY,
+        color: config.color,
+        shape: config.shape,
+        size: config.size,
+        label: config.label,
+        name: `${config.name}_${entityIdCounter}`,
+        id: `entity_${entityIdCounter++}`
+      });
+      
+      entities.push(entity);
+      container.addChild(entity);
+      updateEntityList();
+      
+      console.log(`已生成 ${config.name} 於 (${offsetX.toFixed(0)}, ${offsetY.toFixed(0)})`);
+    }
     
     // === 匯出關卡 ===
     function exportLevel() {
@@ -2704,7 +2706,7 @@
     window.addEventListener('DOMContentLoaded', initEditor);
     
     // === 全域函數暴露 ===
-    // window.generateObject = generateObject; // 已移除
+    window.generateObject = generateObject;
     window.clearLevel = clearLevel;
     window.resetCamera = resetCamera;
     window.validateCoordinates = validateCoordinates;
