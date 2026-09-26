@@ -636,8 +636,10 @@
     let globalDragState = {
       isDragging: false,
       dragEntity: null,
+      dragCluster: null, // 新增：拖拽的群組
       dragStartPos: { x: 0, y: 0 },
       entityStartPos: { x: 0, y: 0 },
+      clusterStartPos: { x: 0, y: 0 }, // 新增：群組開始位置
       dragThreshold: 3 // 像素閾值，區分點擊和拖拽
     };
     let selectedEntity = null;
@@ -1530,7 +1532,7 @@
       // 增大拖拽熱區 - 創建一個更大的透明熱區
       const dragHotspot = new PIXI.Graphics();
       dragHotspot.beginFill(0x000000, 0); // 完全透明
-      dragHotspot.drawCircle(0, 0, 20); // 比中心點大的熱區
+      dragHotspot.drawCircle(0, 0, 30); // 進一步擴大到30px半徑
       dragHotspot.endFill();
       dragHotspot.x = cluster.centerX;
       dragHotspot.y = cluster.centerY;
@@ -1538,46 +1540,26 @@
       dragHotspot.buttonMode = true;
       dragHotspot.cursor = 'move';
       
-      // 添加拖拽功能到熱區（而非中心點本身）
-      let dragging = false;
-      let dragOffset = { x: 0, y: 0 };
-      
+      // 使用全域拖拽系統（與主物件相同）
       dragHotspot.on('pointerdown', (event) => {
-        dragging = true;
-        const position = event.data.global;
-        dragOffset.x = position.x - cluster.centerX;
-        dragOffset.y = position.y - cluster.centerY;
-        centerPoint.alpha = 0.8; // 拖拽時半透明
-        dragHotspot.alpha = 0.1; // 拖拽時顯示熱區範圍
-        console.log('開始拖拽群組中心');
-      });
-      
-      dragHotspot.on('pointermove', (event) => {
-        if (!dragging) return;
+        // 準備群組拖拽狀態
+        const globalPos = event.data.global;
+        const localPos = dragHotspot.parent.toLocal(globalPos);
         
-        const position = event.data.global;
-        cluster.centerX = position.x - dragOffset.x;
-        cluster.centerY = position.y - dragOffset.y;
+        globalDragState.dragCluster = { cluster, index, centerPoint, dragHotspot };
+        globalDragState.dragStartPos.x = localPos.x;
+        globalDragState.dragStartPos.y = localPos.y;
+        globalDragState.clusterStartPos.x = cluster.centerX;
+        globalDragState.clusterStartPos.y = cluster.centerY;
+        globalDragState.isDragging = false; // 還未開始拖拽，等待閾值
         
-        // 重新渲染整個群組
-        renderClusterVisuals(selectedEntity);
-      });
-      
-      dragHotspot.on('pointerup', () => {
-        if (dragging) {
-          dragging = false;
-          centerPoint.alpha = 1.0;
-          dragHotspot.alpha = 0.0; // 隱藏熱區
-          console.log(`群組 "${cluster.name}" 移動到: (${Math.round(cluster.centerX)}, ${Math.round(cluster.centerY)})`);
-        }
-      });
-      
-      dragHotspot.on('pointerupoutside', () => {
-        if (dragging) {
-          dragging = false;
-          centerPoint.alpha = 1.0;
-          dragHotspot.alpha = 0.0;
-        }
+        // 視覺反饋
+        centerPoint.alpha = 0.8;
+        dragHotspot.alpha = 0.1;
+        
+        // 阻止事件冒泡
+        event.stopPropagation();
+        console.log('群組中心拖拽準備就緒');
       });
       
       clusterGroup.addChild(centerPoint);
@@ -1948,6 +1930,47 @@
             }
           }
         }
+        
+        // 處理群組中心拖拽（左鍵）- 與主物件相同的流暢體驗
+        if (globalDragState.dragCluster && !globalDragState.dragEntity) {
+          const rect = canvas.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+          const worldX = (mouseX - CANVAS_WIDTH / 2) / cameraZoom + cameraX;
+          const worldY = (mouseY - CANVAS_HEIGHT / 2) / cameraZoom + cameraY;
+          
+          const deltaX = worldX - globalDragState.dragStartPos.x;
+          const deltaY = worldY - globalDragState.dragStartPos.y;
+          const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+          
+          // 檢查是否超過拖拽閾值
+          if (!globalDragState.isDragging && distance > globalDragState.dragThreshold) {
+            globalDragState.isDragging = true;
+            canvas.style.cursor = 'grabbing';
+          }
+          
+          // 如果正在拖拽，更新群組中心位置
+          if (globalDragState.isDragging) {
+            const { cluster } = globalDragState.dragCluster;
+            cluster.centerX = globalDragState.clusterStartPos.x + deltaX;
+            cluster.centerY = globalDragState.clusterStartPos.y + deltaY;
+            
+            // 限制在邊界內（與主物件相同的邊界處理）
+            const halfWidth = GAME_WORLD_WIDTH / 2;
+            const halfHeight = GAME_WORLD_HEIGHT / 2;
+            cluster.centerX = Math.max(-halfWidth + 30, Math.min(halfWidth - 30, cluster.centerX));
+            cluster.centerY = Math.max(-halfHeight + 30, Math.min(halfHeight - 30, cluster.centerY));
+            
+            // 節流更新群組視覺化（與主物件相同的優化）
+            if (!globalDragState.dragCluster._updateScheduled) {
+              globalDragState.dragCluster._updateScheduled = true;
+              requestAnimationFrame(() => {
+                renderClusterVisuals(selectedEntity);
+                globalDragState.dragCluster._updateScheduled = false;
+              });
+            }
+          }
+        }
         // 處理攝影機平移（中鍵）
         else if (cameraPanState.isPanning) {
           const deltaX = (e.clientX - cameraPanState.lastPointerX) / cameraZoom;
@@ -1988,6 +2011,30 @@
             globalDragState.dragEntity = null;
             canvas.style.cursor = 'default';
           }
+          
+          // 結束群組中心拖拽
+          if (globalDragState.dragCluster) {
+            // 如果沒有實際拖拽（距離小於閾值），則只是點擊選擇
+            if (!globalDragState.isDragging) {
+              // 點擊選擇群組中心（可能用於未來功能）
+            } else {
+              // 完成拖拽，記錄最終位置
+              const { cluster, centerPoint, dragHotspot } = globalDragState.dragCluster;
+              console.log(`群組 "${cluster.name}" 移動到: (${Math.round(cluster.centerX)}, ${Math.round(cluster.centerY)})`);
+            }
+            
+            // 重置拖拽狀態和視覺效果
+            if (globalDragState.dragCluster.centerPoint) {
+              globalDragState.dragCluster.centerPoint.alpha = 1.0;
+            }
+            if (globalDragState.dragCluster.dragHotspot) {
+              globalDragState.dragCluster.dragHotspot.alpha = 0.0;
+            }
+            
+            globalDragState.isDragging = false;
+            globalDragState.dragCluster = null;
+            canvas.style.cursor = 'default';
+          }
         }
       });
       
@@ -2006,6 +2053,18 @@
         if (globalDragState.dragEntity) {
           globalDragState.isDragging = false;
           globalDragState.dragEntity = null;
+        }
+        
+        // 如果滑鼠離開canvas，結束群組拖拽
+        if (globalDragState.dragCluster) {
+          if (globalDragState.dragCluster.centerPoint) {
+            globalDragState.dragCluster.centerPoint.alpha = 1.0;
+          }
+          if (globalDragState.dragCluster.dragHotspot) {
+            globalDragState.dragCluster.dragHotspot.alpha = 0.0;
+          }
+          globalDragState.isDragging = false;
+          globalDragState.dragCluster = null;
         }
         if (cameraPanState.isPanning) {
           cameraPanState.isPanning = false;
@@ -2062,6 +2121,20 @@
             globalDragState.dragEntity = null;
             canvas.style.cursor = 'default';
           }
+          
+          // ESC鍵也取消群組拖拽
+          if (globalDragState.dragCluster) {
+            if (globalDragState.dragCluster.centerPoint) {
+              globalDragState.dragCluster.centerPoint.alpha = 1.0;
+            }
+            if (globalDragState.dragCluster.dragHotspot) {
+              globalDragState.dragCluster.dragHotspot.alpha = 0.0;
+            }
+            globalDragState.isDragging = false;
+            globalDragState.dragCluster = null;
+            canvas.style.cursor = 'default';
+          }
+          
           if (selectedEntity) {
             redrawEntity(selectedEntity, false);
             selectedEntity = null;
