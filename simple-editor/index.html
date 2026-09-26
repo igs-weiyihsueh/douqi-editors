@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>簡潔關卡編輯器</title>
+  <title>簡潔關卡編輯器 - v4.1-fixed</title>
   <style>
     * {
       margin: 0;
@@ -1498,6 +1498,9 @@
     }
     
     function createClusterVisual(cluster, index) {
+      console.log('=== createClusterVisual START ===');
+      console.log('PIXI version check - Graphics API should be v7 compatible');
+      
       if (!window.clusterContainer) {
         console.log('createClusterVisual: clusterContainer不存在');
         return;
@@ -1519,13 +1522,22 @@
       
       console.log(`創建中心點在: (${cluster.centerX}, ${cluster.centerY})`);
       
-      // 1. 繪製群組中心點
+      // 1. 繪製群組中心點 - 使用PIXI v7兼容語法
       const centerPoint = new PIXI.Graphics();
-      centerPoint.beginFill(0x00ff00); // 綠色中心點
-      centerPoint.drawCircle(0, 0, 8);
-      centerPoint.endFill();
-      centerPoint.x = cluster.centerX;
-      centerPoint.y = cluster.centerY;
+      console.log('centerPoint created:', centerPoint);
+      console.log('Available methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(centerPoint)));
+      
+      try {
+        centerPoint.beginFill(0x00ff00); // 綠色中心點
+        centerPoint.drawCircle(0, 0, 8);
+        centerPoint.endFill();
+        centerPoint.x = cluster.centerX;
+        centerPoint.y = cluster.centerY;
+        console.log('中心點繪製成功');
+      } catch (error) {
+        console.error('中心點繪製失敗:', error);
+        return;
+      }
       
       // 讓中心點可交互
       centerPoint.interactive = true;
