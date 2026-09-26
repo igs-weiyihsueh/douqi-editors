@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>簡潔關卡編輯器 - v5.1-diagnosis</title>
+  <title>簡潔關卡編輯器 - v6.0-clean</title>
   <style>
     * {
       margin: 0;
@@ -1485,11 +1485,6 @@
       entity.userData.clusters.forEach((cluster, index) => {
         createClusterVisual(cluster, index);
       });
-      
-      // 確保群組容器在最頂層，這樣群組中心可以被點擊
-      if (window.clusterContainer.parent) {
-        window.clusterContainer.parent.setChildIndex(window.clusterContainer, window.clusterContainer.parent.children.length - 1);
-      }
     }
     
     function clearClusterVisuals() {
@@ -1529,66 +1524,37 @@
         return;
       }
       
-      // 讓中心點可交互 - 改善拖拽體驗
+      // 讓中心點可交互 - 與主物件完全相同的交互設定
       centerPoint.interactive = true;
       centerPoint.buttonMode = true;
       centerPoint.cursor = 'move';
       
-      // 增大拖拽熱區 - 創建一個更大的透明熱區
-      const dragHotspot = new PIXI.Graphics();
-      dragHotspot.beginFill(0x000000, 0); // 完全透明
-      dragHotspot.drawCircle(0, 0, 30); // 進一步擴大到30px半徑
-      dragHotspot.endFill();
-      dragHotspot.x = cluster.centerX;
-      dragHotspot.y = cluster.centerY;
-      dragHotspot.interactive = true;
-      dragHotspot.buttonMode = true;
-      dragHotspot.cursor = 'move';
-      
-      // 添加測試：在熱區上放一個半透明的調試圓圈
-      const debugCircle = new PIXI.Graphics();
-      debugCircle.beginFill(0xff0000, 0.1); // 紅色，10%透明
-      debugCircle.drawCircle(0, 0, 30);
-      debugCircle.endFill();
-      debugCircle.x = cluster.centerX;
-      debugCircle.y = cluster.centerY;
-      
-      // 使用全域拖拽系統（與主物件相同）
-      dragHotspot.on('pointerdown', (event) => {
-        console.log('🎯 群組中心熱區被點擊！');
+      // 群組中心點擊事件 - 完全複製主物件的pointerdown邏輯
+      centerPoint.on('pointerdown', (event) => {
+        // 選擇當前實體（如果需要的話）
+        selectEntityObject(selectedEntity);
+        
+        // 準備拖拽狀態 - 與主物件完全相同
+        const globalPos = event.data.global;
+        const localPos = centerPoint.parent.toLocal(globalPos);
         
         // 清除可能存在的主物件拖拽狀態（避免衝突）
         if (globalDragState.dragEntity) {
-          console.log('清除主物件拖拽狀態:', globalDragState.dragEntity);
           globalDragState.dragEntity = null;
         }
         
-        // 準備群組拖拽狀態
-        const globalPos = event.data.global;
-        const localPos = dragHotspot.parent.toLocal(globalPos);
-        
-        globalDragState.dragCluster = { cluster, index, centerPoint, dragHotspot };
+        globalDragState.dragCluster = { cluster, index, centerPoint };
         globalDragState.dragStartPos.x = localPos.x;
         globalDragState.dragStartPos.y = localPos.y;
         globalDragState.clusterStartPos.x = cluster.centerX;
         globalDragState.clusterStartPos.y = cluster.centerY;
         globalDragState.isDragging = false; // 還未開始拖拽，等待閾值
         
-        // 視覺反饋
-        centerPoint.alpha = 0.8;
-        dragHotspot.alpha = 0.1;
-        debugCircle.alpha = 0.3; // 調試圓圈更明顯
-        
-        // 阻止事件冒泡
+        // 阻止事件冒泡到canvas - 與主物件相同
         event.stopPropagation();
-        console.log('群組中心拖拽準備就緒，已清除主物件拖拽狀態');
       });
       
       clusterGroup.addChild(centerPoint);
-      
-      // 將拖拽熱區和調試圓圈添加到最後，確保它在最頂層可以捕獲事件
-      clusterGroup.addChild(debugCircle); // 添加調試可視化
-      clusterGroup.addChild(dragHotspot); // 添加拖拽熱區
       
       // 2. 繪製範圍圓圈
       const rangeCircle = new PIXI.Graphics();
@@ -1956,7 +1922,7 @@
           }
         }
         
-        // 處理群組中心拖拽（左鍵）- 修復競態條件
+        // 處理群組中心拖拽（左鍵）- 與主物件完全相同的邏輯
         if (globalDragState.dragCluster) {
           const rect = canvas.getBoundingClientRect();
           const mouseX = e.clientX - rect.left;
@@ -1968,26 +1934,25 @@
           const deltaY = worldY - globalDragState.dragStartPos.y;
           const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
           
-          // 檢查是否超過拖拽閾值
+          // 檢查是否超過拖拽閾值 - 與主物件相同
           if (!globalDragState.isDragging && distance > globalDragState.dragThreshold) {
             globalDragState.isDragging = true;
             canvas.style.cursor = 'grabbing';
-            console.log('群組中心拖拽開始');
           }
           
-          // 如果正在拖拽，更新群組中心位置
+          // 如果正在拖拽，更新群組中心位置 - 與主物件相同的邏輯
           if (globalDragState.isDragging) {
             const { cluster } = globalDragState.dragCluster;
             cluster.centerX = globalDragState.clusterStartPos.x + deltaX;
             cluster.centerY = globalDragState.clusterStartPos.y + deltaY;
             
-            // 限制在邊界內（與主物件相同的邊界處理）
+            // 限制在邊界內 - 與主物件相同的邊界處理
             const halfWidth = GAME_WORLD_WIDTH / 2;
             const halfHeight = GAME_WORLD_HEIGHT / 2;
-            cluster.centerX = Math.max(-halfWidth + 30, Math.min(halfWidth - 30, cluster.centerX));
-            cluster.centerY = Math.max(-halfHeight + 30, Math.min(halfHeight - 30, cluster.centerY));
+            cluster.centerX = Math.max(-halfWidth + 20, Math.min(halfWidth - 20, cluster.centerX));
+            cluster.centerY = Math.max(-halfHeight + 20, Math.min(halfHeight - 20, cluster.centerY));
             
-            // 節流更新群組視覺化（與主物件相同的優化）
+            // 更新UI（節流更新，避免過於頻繁）- 與主物件相同的優化
             if (!globalDragState.dragCluster._updateScheduled) {
               globalDragState.dragCluster._updateScheduled = true;
               requestAnimationFrame(() => {
@@ -2038,25 +2003,14 @@
             canvas.style.cursor = 'default';
           }
           
-          // 結束群組中心拖拽
+          // 結束群組中心拖拽 - 與主物件完全相同的邏輯
           if (globalDragState.dragCluster) {
             // 如果沒有實際拖拽（距離小於閾值），則只是點擊選擇
             if (!globalDragState.isDragging) {
               // 點擊選擇群組中心（可能用於未來功能）
-            } else {
-              // 完成拖拽，記錄最終位置
-              const { cluster, centerPoint, dragHotspot } = globalDragState.dragCluster;
-              console.log(`群組 "${cluster.name}" 移動到: (${Math.round(cluster.centerX)}, ${Math.round(cluster.centerY)})`);
             }
             
-            // 重置拖拽狀態和視覺效果
-            if (globalDragState.dragCluster.centerPoint) {
-              globalDragState.dragCluster.centerPoint.alpha = 1.0;
-            }
-            if (globalDragState.dragCluster.dragHotspot) {
-              globalDragState.dragCluster.dragHotspot.alpha = 0.0;
-            }
-            
+            // 重置拖拽狀態 - 與主物件相同
             globalDragState.isDragging = false;
             globalDragState.dragCluster = null;
             canvas.style.cursor = 'default';
@@ -2148,14 +2102,14 @@
             canvas.style.cursor = 'default';
           }
           
-          // ESC鍵也取消群組拖拽
+          // ESC鍵取消拖拽狀態 - 與主物件相同的處理
+          if (globalDragState.dragEntity) {
+            globalDragState.isDragging = false;
+            globalDragState.dragEntity = null;
+            canvas.style.cursor = 'default';
+          }
+          
           if (globalDragState.dragCluster) {
-            if (globalDragState.dragCluster.centerPoint) {
-              globalDragState.dragCluster.centerPoint.alpha = 1.0;
-            }
-            if (globalDragState.dragCluster.dragHotspot) {
-              globalDragState.dragCluster.dragHotspot.alpha = 0.0;
-            }
             globalDragState.isDragging = false;
             globalDragState.dragCluster = null;
             canvas.style.cursor = 'default';
