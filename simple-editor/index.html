@@ -1472,13 +1472,22 @@
     
     // === 群組可視化函數 ===
     function renderClusterVisuals(entity) {
-      if (!entity || !entity.userData.clusters || !window.clusterContainer) return;
+      console.log('renderClusterVisuals 被調用，entity:', entity);
+      console.log('window.clusterContainer:', window.clusterContainer);
+      
+      if (!entity || !entity.userData.clusters || !window.clusterContainer) {
+        console.log('renderClusterVisuals 早期返回，條件不滿足');
+        return;
+      }
+      
+      console.log('群組數量:', entity.userData.clusters.length);
       
       // 清除現有的群組視覺元素
       clearClusterVisuals();
       
       // 為每個群組創建視覺元素
       entity.userData.clusters.forEach((cluster, index) => {
+        console.log(`創建群組 ${index}:`, cluster);
         createClusterVisual(cluster, index);
       });
     }
@@ -1489,18 +1498,26 @@
     }
     
     function createClusterVisual(cluster, index) {
-      if (!window.clusterContainer) return;
+      if (!window.clusterContainer) {
+        console.log('createClusterVisual: clusterContainer不存在');
+        return;
+      }
+      
+      console.log(`創建群組視覺 ${index}:`, cluster);
       
       // 確保群組有位置數據
       if (typeof cluster.centerX === 'undefined') {
         cluster.centerX = 400 + index * 80;
         cluster.centerY = 300 + index * 40;
         cluster.radius = 30;
+        console.log(`補全位置數據: (${cluster.centerX}, ${cluster.centerY})`);
       }
       
       // 創建群組容器
       const clusterGroup = new PIXI.Container();
       clusterGroup.name = `cluster_${index}`;
+      
+      console.log(`創建中心點在: (${cluster.centerX}, ${cluster.centerY})`);
       
       // 1. 繪製群組中心點
       const centerPoint = new PIXI.Graphics();
@@ -1568,6 +1585,7 @@
       
       // 添加到群組容器
       window.clusterContainer.addChild(clusterGroup);
+      console.log(`群組 ${index} 已添加到clusterContainer，子元素數量:`, window.clusterContainer.children.length);
     }
     
     // === 陣型計算函數 ===
