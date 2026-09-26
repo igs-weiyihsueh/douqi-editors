@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>簡潔關卡編輯器 - v8.0-generation</title>
+  <title>簡潔關卡編輯器 - v8.1-group-management</title>
   <style>
     * {
       margin: 0;
@@ -633,7 +633,11 @@
       
       <div class="sidebar-content">
         <div class="sidebar-group">
-          <h3>物件管理</h3>
+          <h3>物件管理 
+            <span id="object-count-badge" style="font-size: 10px; background: #4a5568; padding: 2px 6px; border-radius: 10px; margin-left: 8px;">
+              載入中...
+            </span>
+          </h3>
           <div id="entity-list">
             <p style="color: #a0aec0; font-size: 12px; margin: 0; padding: 10px;">目前沒有物件</p>
           </div>
@@ -1128,7 +1132,9 @@
         label: label,
         name: data.name || `${config.name}_${entityIdCounter++}`,
         id: data.id || `entity_${entityIdCounter++}`,
-        clusters: data.clusters || []
+        clusters: data.clusters || [],
+        isGroupMember: data.isGroupMember || false,  // ⭐ 保存群組成員標記
+        clusterSource: data.clusterSource || null   // ⭐ 保存群組來源資訊
       };
       
       // 添加實體交互事件
@@ -1136,7 +1142,28 @@
       container.buttonMode = true;
       
       container.on('pointerdown', (event) => {
-        // 選擇實體
+        // 檢查是否為群組成員物件
+        if (container.userData.isGroupMember) {
+          // 群組成員物件不能直接選中，顯示提示
+          console.log(`🔒 群組物件 "${container.userData.name}" 只能透過群組面板管理`);
+          const clusterInfo = container.userData.clusterSource;
+          if (clusterInfo) {
+            console.log(`   所屬群組: ${clusterInfo.clusterName} (位置 ${clusterInfo.positionIndex + 1})`);
+          }
+          
+          // 簡單的視覺反饋 - 短暫閃爍
+          const originalAlpha = container.alpha;
+          container.alpha = 0.5;
+          setTimeout(() => {
+            container.alpha = originalAlpha;
+          }, 200);
+          
+          // 阻止事件冒泡，但不選中物件
+          event.stopPropagation();
+          return;
+        }
+        
+        // 非群組成員的正常選擇邏輯
         selectEntityObject(container);
         
         // 準備拖拽狀態
@@ -1577,6 +1604,7 @@
           label: config.label,
           name: `${config.name}_${cluster.name}_${posIndex + 1}`,
           id: `cluster_${clusterIndex}_obj_${posIndex}_${entityIdCounter++}`,
+          isGroupMember: true,  // ⭐ 標記為群組成員
           clusterSource: {
             clusterId: cluster.id,
             clusterName: cluster.name,
@@ -1953,15 +1981,19 @@
     function updateEntityList() {
       const listContainer = document.getElementById('entity-list');
       
-      if (entities.length === 0) {
-        listContainer.innerHTML = '<p style="color: #a0aec0; font-size: 12px; margin: 0; padding: 10px;">目前沒有物件</p>';
+      // 過濾掉群組成員物件，只顯示獨立物件
+      const independentEntities = entities.filter(entity => !entity.userData.isGroupMember);
+      
+      if (independentEntities.length === 0) {
+        listContainer.innerHTML = '<p style="color: #a0aec0; font-size: 12px; margin: 0; padding: 10px;">目前沒有獨立物件</p>';
         return;
       }
       
       listContainer.innerHTML = '';
       
-      entities.forEach((entity, index) => {
+      independentEntities.forEach((entity) => {
         const data = entity.userData;
+        const originalIndex = entities.indexOf(entity); // 獲取在原始陣列中的索引
         const item = document.createElement('div');
         item.className = 'entity-item';
         item.onclick = (e) => {
@@ -1981,11 +2013,38 @@
             <div class="entity-type">${data.name || data.type}</div>
             <div class="entity-pos">(${Math.round(entity.x)}, ${Math.round(entity.y)})</div>
           </div>
-          <button class="entity-delete-btn" onclick="deleteEntityFromList(${index}); event.stopPropagation();">×</button>
+          <button class="entity-delete-btn" onclick="deleteEntityFromList(${originalIndex}); event.stopPropagation();">×</button>
         `;
         
         listContainer.appendChild(item);
       });
+      
+      // 顯示統計信息
+      const totalEntities = entities.length;
+      const groupMemberCount = totalEntities - independentEntities.length;
+      
+      if (groupMemberCount > 0) {
+        const statsItem = document.createElement('div');
+        statsItem.className = 'entity-stats';
+        statsItem.innerHTML = `
+          <div style="color: #68d391; font-size: 11px; padding: 4px 8px; border-top: 1px solid #4a5568; margin-top: 4px;">
+            另有 ${groupMemberCount} 個群組物件 (在群組面板管理)
+          </div>
+        `;
+        listContainer.appendChild(statsItem);
+      }
+      
+      // 更新物件統計標籤
+      const badge = document.getElementById('object-count-badge');
+      if (badge) {
+        if (groupMemberCount > 0) {
+          badge.textContent = `獨立: ${independentEntities.length} | 群組: ${groupMemberCount}`;
+          badge.style.background = '#38a169';
+        } else {
+          badge.textContent = `共 ${independentEntities.length} 個`;
+          badge.style.background = '#4a5568';
+        }
+      }
     }
     
     // === 刪除選中實體 ===
@@ -2010,6 +2069,27 @@
       
       const entity = entities[index];
       
+      // 檢查是否為群組成員物件 - 群組物件不應該出現在列表中，但為了安全性檢查
+      if (entity.userData.isGroupMember) {
+        console.warn(`🔒 群組物件 "${entity.userData.name}" 不能單獨刪除，請透過群組面板管理`);
+        return;
+      }
+      
+      // 檢查是否有已生成的群組需要一併刪除
+      if (entity.userData.clusters && entity.userData.clusters.length > 0) {
+        const generatedClusters = entity.userData.clusters.filter(cluster => cluster.generated);
+        if (generatedClusters.length > 0) {
+          // 詢問用戶是否確認刪除（包含群組物件）
+          const confirmMessage = `此物件包含 ${generatedClusters.length} 個已生成的群組，刪除後將一併移除所有群組物件。是否繼續？`;
+          if (!confirm(confirmMessage)) {
+            return;
+          }
+          
+          // 刪除所有相關的群組物件
+          deleteClusterObjects(entity);
+        }
+      }
+      
       // 如果刪除的是當前選中的實體，清除選中狀態
       if (entity === selectedEntity) {
         selectedEntity = null;
@@ -2020,7 +2100,38 @@
       
       updateEntityList();
       updatePropertyPanel();
-      console.log(`已從列表刪除實體: ${entity.userData.type}`);
+      console.log(`已從列表刪除實體: ${entity.userData.name || entity.userData.type}`);
+    }
+    
+    // === 刪除與指定主物件相關的所有群組物件 ===
+    function deleteClusterObjects(mainEntity) {
+      if (!mainEntity.userData.clusters) return;
+      
+      let deletedCount = 0;
+      
+      // 為每個已生成的群組刪除其物件
+      mainEntity.userData.clusters.forEach((cluster) => {
+        if (!cluster.generated) return;
+        
+        // 反向遍歷entities陣列，避免索引問題
+        for (let i = entities.length - 1; i >= 0; i--) {
+          const entity = entities[i];
+          if (entity.userData.isGroupMember && 
+              entity.userData.clusterSource && 
+              entity.userData.clusterSource.clusterId === cluster.id) {
+            
+            // 從容器和陣列中移除
+            container.removeChild(entity);
+            entities.splice(i, 1);
+            deletedCount++;
+            
+            console.log(`刪除群組物件: ${entity.userData.name}`);
+          }
+        }
+      });
+      
+      console.log(`已刪除 ${deletedCount} 個相關群組物件`);
+      return deletedCount;
     }
     
     // === 座標驗證 ===
