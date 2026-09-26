@@ -1504,8 +1504,9 @@
       
       // 1. 繪製群組中心點
       const centerPoint = new PIXI.Graphics();
-      centerPoint.circle(0, 0, 8);
-      centerPoint.fill(0x00ff00); // 綠色中心點
+      centerPoint.beginFill(0x00ff00); // 綠色中心點
+      centerPoint.drawCircle(0, 0, 8);
+      centerPoint.endFill();
       centerPoint.x = cluster.centerX;
       centerPoint.y = cluster.centerY;
       
@@ -1556,8 +1557,8 @@
       
       // 2. 繪製範圍圓圈
       const rangeCircle = new PIXI.Graphics();
-      rangeCircle.circle(0, 0, cluster.radius || 30);
-      rangeCircle.stroke({ width: 1, color: 0x00ff00, alpha: 0.3 });
+      rangeCircle.lineStyle(1, 0x00ff00, 0.3);
+      rangeCircle.drawCircle(0, 0, cluster.radius || 30);
       rangeCircle.x = cluster.centerX;
       rangeCircle.y = cluster.centerY;
       clusterGroup.addChild(rangeCircle);
@@ -1644,13 +1645,15 @@
         
         if (config.shape === 'square') {
           const size = config.size / 2;
-          preview.rect(-size, -size, config.size, config.size);
-          preview.fill({ color: config.color, alpha });
-          preview.stroke({ width: 1, color: config.color, alpha: alpha + 0.2 });
+          preview.beginFill(config.color, alpha);
+          preview.lineStyle(1, config.color, alpha + 0.2);
+          preview.drawRect(-size, -size, config.size, config.size);
+          preview.endFill();
         } else if (config.shape === 'circle') {
-          preview.circle(0, 0, config.size / 2);
-          preview.fill({ color: config.color, alpha });
-          preview.stroke({ width: 1, color: config.color, alpha: alpha + 0.2 });
+          preview.beginFill(config.color, alpha);
+          preview.lineStyle(1, config.color, alpha + 0.2);
+          preview.drawCircle(0, 0, config.size / 2);
+          preview.endFill();
         } else if (config.shape === 'hexagon') {
           // 簡化為六角形
           const size = config.size / 2;
@@ -1662,9 +1665,10 @@
               Math.sin(angle) * size
             );
           }
-          preview.poly(points);
-          preview.fill({ color: config.color, alpha });
-          preview.stroke({ width: 1, color: config.color, alpha: alpha + 0.2 });
+          preview.beginFill(config.color, alpha);
+          preview.lineStyle(1, config.color, alpha + 0.2);
+          preview.drawPolygon(points);
+          preview.endFill();
         }
         
         preview.x = pos.x;
@@ -1675,9 +1679,9 @@
         // 4. 繪製連接線 (從中心點到每個預覽物件)
         if (index < positions.length) {
           const line = new PIXI.Graphics();
+          line.lineStyle(1, 0x00ff00, 0.2);
           line.moveTo(cluster.centerX, cluster.centerY);
           line.lineTo(pos.x, pos.y);
-          line.stroke({ width: 1, color: 0x00ff00, alpha: 0.2 });
           container.addChild(line);
         }
       });
