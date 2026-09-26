@@ -445,6 +445,55 @@
       margin-top: 8px;
     }
     
+    .cluster-item-expanded {
+      background: #1a202c;
+      border: 1px solid #4a5568;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      padding: 8px;
+    }
+    
+    .cluster-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .cluster-params {
+      font-size: 11px;
+    }
+    
+    .param-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    
+    .param-row label {
+      width: 35px;
+      color: #a0aec0;
+      font-size: 10px;
+    }
+    
+    .param-row input,
+    .param-row select {
+      flex: 1;
+      background: #2d3748;
+      border: 1px solid #4a5568;
+      color: #e2e8f0;
+      padding: 2px 4px;
+      border-radius: 2px;
+      font-size: 10px;
+      margin-left: 4px;
+    }
+    
+    .param-row input:focus,
+    .param-row select:focus {
+      outline: none;
+      border-color: #63b3ed;
+    }
+    
     .simple-cluster-item {
       background: #1a202c;
       border: 1px solid #4a5568;
@@ -1181,12 +1230,53 @@
       // 簡單的群組列表HTML
       let clusterListHtml = '';
       if (clusterCount > 0) {
-        clusterListHtml = data.clusters.map((cluster, index) => 
-          `<div class="simple-cluster-item">
-            <span class="cluster-name" onclick="renameCluster(${index})" title="點擊重命名">${cluster.name}</span>
-            <button class="cluster-delete-btn" onclick="deleteCluster(${index})" title="刪除群組">×</button>
-          </div>`
-        ).join('');
+        clusterListHtml = data.clusters.map((cluster, index) => {
+          // 確保舊群組有默認參數
+          if (!cluster.count) cluster.count = 3;
+          if (!cluster.objectType) cluster.objectType = 'wooden_box';
+          if (!cluster.formation) cluster.formation = 'circle';
+          
+          const objectTypes = {
+            wooden_box: '木箱',
+            bomb: '炸彈', 
+            stone: '石頭'
+          };
+          const formations = {
+            circle: '圓形',
+            line: '直線',
+            square: '方形'
+          };
+          
+          return `<div class="cluster-item-expanded">
+            <div class="cluster-header">
+              <span class="cluster-name" onclick="renameCluster(${index})" title="點擊重命名">${cluster.name}</span>
+              <button class="cluster-delete-btn" onclick="deleteCluster(${index})" title="刪除群組">×</button>
+            </div>
+            <div class="cluster-params">
+              <div class="param-row">
+                <label>數量:</label>
+                <input type="number" value="${cluster.count || 3}" min="1" max="20" 
+                       onchange="updateClusterParam(${index}, 'count', parseInt(this.value))" />
+              </div>
+              <div class="param-row">
+                <label>類型:</label>
+                <select onchange="updateClusterParam(${index}, 'objectType', this.value)">
+                  <option value="wooden_box" ${cluster.objectType === 'wooden_box' ? 'selected' : ''}>木箱</option>
+                  <option value="bomb" ${cluster.objectType === 'bomb' ? 'selected' : ''}>炸彈</option>
+                  <option value="stone" ${cluster.objectType === 'stone' ? 'selected' : ''}>石頭</option>
+                </select>
+              </div>
+              <div class="param-row">
+                <label>陣型:</label>
+                <select onchange="updateClusterParam(${index}, 'formation', this.value)">
+                  <option value="circle" ${cluster.formation === 'circle' ? 'selected' : ''}>圓形</option>
+                  <option value="line" ${cluster.formation === 'line' ? 'selected' : ''}>直線</option>
+                  <option value="square" ${cluster.formation === 'square' ? 'selected' : ''}>方形</option>
+                </select>
+              </div>
+            </div>
+          </div>`;
+        }).join('');
       } else {
         clusterListHtml = '<p style="color: #a0aec0; font-size: 11px; margin: 10px 0; text-align: center;">點擊上方按鈕新增群組</p>';
       }
@@ -1302,7 +1392,10 @@
       // 添加一個簡單的群組
       const newCluster = {
         id: 'cluster_' + Date.now(),
-        name: '群組 ' + (selectedEntity.userData.clusters.length + 1)
+        name: '群組 ' + (selectedEntity.userData.clusters.length + 1),
+        count: 3,
+        objectType: 'wooden_box',
+        formation: 'circle'
       };
       
       selectedEntity.userData.clusters.push(newCluster);
@@ -1344,6 +1437,18 @@
         
         console.log('已重命名群組:', cluster);
       }
+    }
+    
+    function updateClusterParam(index, param, value) {
+      if (!selectedEntity || !selectedEntity.userData.clusters) return;
+      
+      const cluster = selectedEntity.userData.clusters[index];
+      if (!cluster) return;
+      
+      // 更新參數
+      cluster[param] = value;
+      
+      console.log(`群組 "${cluster.name}" 的 ${param} 已更新為:`, value);
     }
     
     // === 更新實體列表 ===
@@ -1701,6 +1806,7 @@
     window.addSimpleCluster = addSimpleCluster;
     window.deleteCluster = deleteCluster;
     window.renameCluster = renameCluster;
+    window.updateClusterParam = updateClusterParam;
   </script>
 </body>
 </html>
