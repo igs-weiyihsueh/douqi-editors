@@ -968,33 +968,7 @@
             <label class="property-label">類型</label>
             <input type="text" class="property-input" value="${data.type}" readonly>
           </div>
-          <div class="property-item">
-            <label class="property-label">ID</label>
-            <input type="text" class="property-input" value="${data.id}" readonly>
-          </div>
         </div>
-        
-        <div class="property-group">
-          <h3>位置</h3>
-          <div class="property-item">
-            <label class="property-label">X 座標</label>
-            <input type="number" class="property-input" value="${Math.round(selectedEntity.x)}" onchange="updateEntityPosition('x', this.value)">
-          </div>
-          <div class="property-item">
-            <label class="property-label">Y 座標</label>
-            <input type="number" class="property-input" value="${Math.round(selectedEntity.y)}" onchange="updateEntityPosition('y', this.value)">
-          </div>
-        </div>
-        
-        <div class="property-group">
-          <h3>外觀</h3>
-          <div class="property-item">
-            <label class="property-label">顏色</label>
-            <input type="color" class="property-input" value="#${data.color.toString(16).padStart(6, '0')}" onchange="updateEntityColor(this.value)">
-          </div>
-        </div>
-        
-
       `;
     }
     
