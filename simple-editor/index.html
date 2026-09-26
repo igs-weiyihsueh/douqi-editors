@@ -412,6 +412,21 @@
       color: #a0aec0;
       font-family: monospace;
     }
+    
+    /* 群組管理基礎樣式 */
+    .cluster-status {
+      color: #e2e8f0;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    
+    .cluster-placeholder {
+      padding: 10px;
+      border: 1px dashed #4a5568;
+      border-radius: 4px;
+      margin-top: 8px;
+      background: #1a202c;
+    }
   </style>
 </head>
 <body>
@@ -1071,6 +1086,12 @@
       }
       
       const data = selectedEntity.userData;
+      
+      // 確保clusters屬性存在（向後兼容）
+      if (!data.clusters) {
+        data.clusters = [];
+      }
+      
       const objectTypes = ['wooden_box', 'bomb', 'stone'];
       const typeNames = {
         wooden_box: '木箱',
@@ -1082,6 +1103,10 @@
       const typeOptions = objectTypes.map(type => 
         `<option value="${type}" ${data.type === type ? 'selected' : ''}>${typeNames[type]}</option>`
       ).join('');
+      
+      // 簡單的群組狀態顯示
+      const clusterCount = data.clusters.length;
+      const clusterStatus = clusterCount > 0 ? `${clusterCount} 個群組` : '暫無群組';
       
       propertyPanel.innerHTML = `
         <div class="property-group">
@@ -1095,6 +1120,17 @@
             <select class="property-input" onchange="updateEntityType(this.value)">
               ${typeOptions}
             </select>
+          </div>
+        </div>
+        
+        <div class="property-group">
+          <h3>群組管理</h3>
+          <div class="property-item">
+            <label class="property-label">狀態</label>
+            <span class="cluster-status">${clusterStatus}</span>
+          </div>
+          <div class="cluster-placeholder">
+            <p style="color: #a0aec0; font-size: 11px; margin: 10px 0; text-align: center;">功能開發中...</p>
           </div>
         </div>
       `;
