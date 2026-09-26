@@ -420,6 +420,41 @@
       font-weight: 500;
     }
     
+    .cluster-controls {
+      margin: 8px 0;
+    }
+    
+    .cluster-add-btn {
+      width: 100%;
+      background: #48bb78;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: background-color 0.2s;
+    }
+    
+    .cluster-add-btn:hover {
+      background: #38a169;
+    }
+    
+    .cluster-list {
+      margin-top: 8px;
+    }
+    
+    .simple-cluster-item {
+      background: #1a202c;
+      border: 1px solid #4a5568;
+      border-radius: 4px;
+      padding: 8px 10px;
+      margin-bottom: 4px;
+      font-size: 12px;
+      color: #e2e8f0;
+    }
+    
     .cluster-placeholder {
       padding: 10px;
       border: 1px dashed #4a5568;
@@ -1108,6 +1143,16 @@
       const clusterCount = data.clusters.length;
       const clusterStatus = clusterCount > 0 ? `${clusterCount} 個群組` : '暫無群組';
       
+      // 簡單的群組列表HTML
+      let clusterListHtml = '';
+      if (clusterCount > 0) {
+        clusterListHtml = data.clusters.map(cluster => 
+          `<div class="simple-cluster-item">${cluster.name}</div>`
+        ).join('');
+      } else {
+        clusterListHtml = '<p style="color: #a0aec0; font-size: 11px; margin: 10px 0; text-align: center;">點擊上方按鈕新增群組</p>';
+      }
+      
       propertyPanel.innerHTML = `
         <div class="property-group">
           <h3>基本資訊</h3>
@@ -1129,8 +1174,11 @@
             <label class="property-label">狀態</label>
             <span class="cluster-status">${clusterStatus}</span>
           </div>
-          <div class="cluster-placeholder">
-            <p style="color: #a0aec0; font-size: 11px; margin: 10px 0; text-align: center;">功能開發中...</p>
+          <div class="cluster-controls">
+            <button class="cluster-add-btn" onclick="addSimpleCluster()">+ 新增群組</button>
+          </div>
+          <div class="cluster-list">
+            ${clusterListHtml}
           </div>
         </div>
       `;
@@ -1202,6 +1250,29 @@
       updateEntityList();
       
       console.log(`實體種類已更新: ${config.name}`);
+    }
+    
+    // === 簡單的群組管理函數 ===
+    function addSimpleCluster() {
+      if (!selectedEntity) return;
+      
+      // 確保clusters陣列存在
+      if (!selectedEntity.userData.clusters) {
+        selectedEntity.userData.clusters = [];
+      }
+      
+      // 添加一個簡單的群組
+      const newCluster = {
+        id: 'cluster_' + Date.now(),
+        name: '群組 ' + (selectedEntity.userData.clusters.length + 1)
+      };
+      
+      selectedEntity.userData.clusters.push(newCluster);
+      
+      // 更新屬性面板顯示
+      updatePropertyPanel();
+      
+      console.log('已新增群組:', newCluster);
     }
     
     // === 更新實體列表 ===
@@ -1556,6 +1627,7 @@
     window.updateEntityName = updateEntityName;
     window.updateEntityType = updateEntityType;
     window.deleteEntityFromList = deleteEntityFromList;
+    window.addSimpleCluster = addSimpleCluster;
   </script>
 </body>
 </html>
