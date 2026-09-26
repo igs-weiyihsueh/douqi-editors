@@ -961,12 +961,30 @@
       }
       
       const data = selectedEntity.userData;
+      const objectTypes = ['enemy', 'collectible', 'powerup'];
+      const typeNames = {
+        enemy: '敵人',
+        collectible: '道具', 
+        powerup: '強化'
+      };
+      
+      // 生成種類選項
+      const typeOptions = objectTypes.map(type => 
+        `<option value="${type}" ${data.type === type ? 'selected' : ''}>${typeNames[type]}</option>`
+      ).join('');
+      
       propertyPanel.innerHTML = `
         <div class="property-group">
           <h3>基本資訊</h3>
           <div class="property-item">
-            <label class="property-label">類型</label>
-            <input type="text" class="property-input" value="${data.type}" readonly>
+            <label class="property-label">名稱</label>
+            <input type="text" class="property-input" value="${data.name || data.type}" onchange="updateEntityName(this.value)" placeholder="輸入物件名稱">
+          </div>
+          <div class="property-item">
+            <label class="property-label">種類</label>
+            <select class="property-input" onchange="updateEntityType(this.value)">
+              ${typeOptions}
+            </select>
           </div>
         </div>
       `;
@@ -1002,6 +1020,44 @@
       console.log(`實體顏色已更新: #${colorHex}`);
     }
     
+    // === 更新實體名稱 ===
+    function updateEntityName(name) {
+      if (!selectedEntity) return;
+      
+      selectedEntity.userData.name = name.trim() || selectedEntity.userData.type;
+      updateEntityList();
+      console.log(`實體名稱已更新: ${selectedEntity.userData.name}`);
+    }
+    
+    // === 更新實體種類 ===
+    function updateEntityType(type) {
+      if (!selectedEntity) return;
+      
+      const typeColors = {
+        enemy: 0xff4444,
+        collectible: 0x44ff44,
+        powerup: 0x4444ff
+      };
+      
+      const typeSizes = {
+        enemy: 12,
+        collectible: 8,
+        powerup: 10
+      };
+      
+      // 更新實體數據
+      selectedEntity.userData.type = type;
+      selectedEntity.userData.color = typeColors[type] || 0xffffff;
+      
+      // 更新視覺外觀
+      redrawEntity(selectedEntity, true);
+      
+      // 更新UI
+      updateEntityList();
+      
+      console.log(`實體種類已更新: ${type}`);
+    }
+    
     // === 更新實體列表 ===
     function updateEntityList() {
       const listContainer = document.getElementById('entity-list');
@@ -1031,7 +1087,7 @@
         
         item.innerHTML = `
           <div class="entity-info">
-            <div class="entity-type">${data.type}</div>
+            <div class="entity-type">${data.name || data.type}</div>
             <div class="entity-pos">(${Math.round(entity.x)}, ${Math.round(entity.y)})</div>
           </div>
           <button class="entity-delete-btn" onclick="deleteEntityFromList(${index}); event.stopPropagation();">×</button>
