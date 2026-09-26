@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>簡潔關卡編輯器 - v8.1-group-management</title>
+  <title>簡潔關卡編輯器 - v8.2-cluster-properties</title>
   <style>
     * {
       margin: 0;
@@ -486,6 +486,56 @@
       cursor: not-allowed;
     }
     
+    .cluster-breadcrumb {
+      font-size: 12px;
+      color: #a0aec0;
+      margin-bottom: 12px;
+      padding: 4px 8px;
+      background: #1a202c;
+      border-radius: 4px;
+    }
+    
+    .cluster-status-display {
+      font-size: 12px;
+      font-weight: 500;
+    }
+    
+    .cluster-summary {
+      font-size: 10px;
+      color: #a0aec0;
+      margin-top: 2px;
+      padding-left: 4px;
+    }
+    
+    .property-button {
+      width: 100%;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: background-color 0.2s;
+    }
+    
+    .property-button.primary {
+      background: #3182ce;
+      color: white;
+    }
+    
+    .property-button.primary:hover {
+      background: #2c5aa0;
+    }
+    
+    .property-button.danger {
+      background: #e53e3e;
+      color: white;
+    }
+    
+    .property-button.danger:hover {
+      background: #c53030;
+    }
+    
     .cluster-list {
       margin-top: 8px;
     }
@@ -692,6 +742,7 @@
       dragThreshold: 3 // 像素閾值，區分點擊和拖拽
     };
     let selectedEntity = null;
+    let selectedCluster = null;  // ⭐ 新增：當前選中的群組 {ownerEntity, cluster, clusterIndex}
     let entityIdCounter = 0;
     
     // === 遊戲場地設定 - 基於實際遊戲 arena 邊界 ===
@@ -1144,27 +1195,49 @@
       container.on('pointerdown', (event) => {
         // 檢查是否為群組成員物件
         if (container.userData.isGroupMember) {
-          // 群組成員物件不能直接選中，顯示提示
-          console.log(`🔒 群組物件 "${container.userData.name}" 只能透過群組面板管理`);
+          // 找到群組物件所屬的主物件和群組
           const clusterInfo = container.userData.clusterSource;
           if (clusterInfo) {
-            console.log(`   所屬群組: ${clusterInfo.clusterName} (位置 ${clusterInfo.positionIndex + 1})`);
+            // 找到擁有該群組的主物件
+            const ownerEntity = entities.find(entity => 
+              !entity.userData.isGroupMember && 
+              entity.userData.clusters &&
+              entity.userData.clusters.some(cluster => cluster.id === clusterInfo.clusterId)
+            );
+            
+            if (ownerEntity) {
+              // 找到具體的群組
+              const targetCluster = ownerEntity.userData.clusters.find(
+                cluster => cluster.id === clusterInfo.clusterId
+              );
+              
+              if (targetCluster) {
+                // 選擇主物件並設置群組焦點
+                window.keepClusterSelection = true; // 設置標記保持群組選擇
+                selectEntityObject(ownerEntity);
+                selectedCluster = {
+                  ownerEntity: ownerEntity,
+                  cluster: targetCluster,
+                  clusterIndex: ownerEntity.userData.clusters.indexOf(targetCluster)
+                };
+                
+                // 更新屬性面板顯示群組屬性
+                updatePropertyPanel();
+                
+                console.log(`已選擇群組: ${targetCluster.name} (來自 ${ownerEntity.userData.name})`);
+              }
+            }
           }
           
-          // 簡單的視覺反饋 - 短暫閃爍
-          const originalAlpha = container.alpha;
-          container.alpha = 0.5;
-          setTimeout(() => {
-            container.alpha = originalAlpha;
-          }, 200);
-          
-          // 阻止事件冒泡，但不選中物件
+          // 阻止事件冒泡，但不執行拖拽
           event.stopPropagation();
           return;
         }
         
         // 非群組成員的正常選擇邏輯
         selectEntityObject(container);
+        // 清除群組選擇狀態
+        selectedCluster = null;
         
         // 準備拖拽狀態
         const globalPos = event.data.global;
@@ -1288,6 +1361,11 @@
       }
       
       selectedEntity = entity;
+      // 清除群組選擇狀態（除非特別設置）
+      if (!window.keepClusterSelection) {
+        selectedCluster = null;
+      }
+      window.keepClusterSelection = false; // 重置標記
       
       // 高亮選中實體
       redrawEntity(entity, true);
@@ -1300,15 +1378,215 @@
     function updatePropertyPanel() {
       const propertyPanel = document.getElementById('property-panel');
       
+      // 檢查是否選中了群組
+      if (selectedCluster) {
+        displayClusterProperties(selectedCluster);
+        return;
+      }
+      
       if (!selectedEntity) {
         propertyPanel.innerHTML = '<p style="color: #a0aec0; font-size: 12px; margin: 0; padding: 20px; text-align: center;">選擇物件以編輯屬性</p>';
         return;
       }
       
-      const data = selectedEntity.userData;
+      displayEntityProperties(selectedEntity);
+    }
+    
+    // === 顯示群組屬性 ===
+    function displayClusterProperties(clusterSelection) {
+      const propertyPanel = document.getElementById('property-panel');
+      const { ownerEntity, cluster, clusterIndex } = clusterSelection;
+      
+      const objectTypes = {
+        wooden_box: '木箱',
+        bomb: '炸彈',
+        stone: '石頭'
+      };
+      
+      const formations = {
+        circle: '圓形',
+        line: '直線',
+        square: '方形'
+      };
+      
+      // 計算群組物件數量（如果已生成）
+      let generatedObjectCount = 0;
+      if (cluster.generated) {
+        generatedObjectCount = entities.filter(entity => 
+          entity.userData.isGroupMember && 
+          entity.userData.clusterSource &&
+          entity.userData.clusterSource.clusterId === cluster.id
+        ).length;
+      }
+      
+      propertyPanel.innerHTML = `
+        <div class="property-group">
+          <h3>群組屬性</h3>
+          <div class="cluster-breadcrumb">
+            來自: <span onclick="selectOwnerEntity()" style="color: #60a5fa; cursor: pointer; text-decoration: underline;">${ownerEntity.userData.name}</span>
+          </div>
+          <div class="property-item">
+            <label class="property-label">群組名稱</label>
+            <input type="text" class="property-input" value="${cluster.name}" 
+                   ${cluster.generated ? 'disabled' : 'onchange="updateClusterProperty(\'name\', this.value)"'} 
+                   placeholder="輸入群組名稱">
+          </div>
+          <div class="property-item">
+            <label class="property-label">狀態</label>
+            <span class="cluster-status-display">
+              ${cluster.generated ? '✅ 已生成' : '👁️ 預覽中'}
+              ${cluster.generated ? ` (${generatedObjectCount} 個物件)` : ''}
+            </span>
+          </div>
+        </div>
+        
+        <div class="property-group">
+          <h3>群組設定</h3>
+          <div class="property-item">
+            <label class="property-label">物件數量</label>
+            <input type="number" class="property-input" value="${cluster.count || 3}" min="1" max="20"
+                   ${cluster.generated ? 'disabled' : 'onchange="updateClusterProperty(\'count\', parseInt(this.value))"'}>
+          </div>
+          <div class="property-item">
+            <label class="property-label">物件類型</label>
+            <select class="property-input" ${cluster.generated ? 'disabled' : 'onchange="updateClusterProperty(\'objectType\', this.value)"'}>
+              <option value="wooden_box" ${cluster.objectType === 'wooden_box' ? 'selected' : ''}>木箱</option>
+              <option value="bomb" ${cluster.objectType === 'bomb' ? 'selected' : ''}>炸彈</option>
+              <option value="stone" ${cluster.objectType === 'stone' ? 'selected' : ''}>石頭</option>
+            </select>
+          </div>
+          <div class="property-item">
+            <label class="property-label">陣型</label>
+            <select class="property-input" ${cluster.generated ? 'disabled' : 'onchange="updateClusterProperty(\'formation\', this.value)"'}>
+              <option value="circle" ${cluster.formation === 'circle' ? 'selected' : ''}>圓形</option>
+              <option value="line" ${cluster.formation === 'line' ? 'selected' : ''}>直線</option>
+              <option value="square" ${cluster.formation === 'square' ? 'selected' : ''}>方形</option>
+            </select>
+          </div>
+          <div class="property-item">
+            <label class="property-label">半徑/間距</label>
+            <input type="number" class="property-input" value="${cluster.radius || 60}" min="30" max="200"
+                   ${cluster.generated ? 'disabled' : 'onchange="updateClusterProperty(\'radius\', parseInt(this.value))"'}>
+          </div>
+          ${cluster.generated ? `
+          <div class="property-item">
+            <label class="property-label">生成時間</label>
+            <span style="color: #68d391; font-size: 12px;">${new Date(cluster.generatedAt).toLocaleString()}</span>
+          </div>
+          ` : ''}
+        </div>
+        
+        <div class="property-group">
+          <h3>群組操作</h3>
+          ${!cluster.generated ? `
+          <button class="property-button primary" onclick="generateSingleCluster()">🎯 生成物件</button>
+          <button class="property-button danger" onclick="deleteCurrentCluster()" style="margin-top: 8px;">🗑️ 刪除群組</button>
+          ` : `
+          <div style="color: #68d391; font-size: 12px; text-align: center; padding: 8px;">
+            群組已生成，不可修改<br>
+            如需修改請刪除主物件重新創建
+          </div>
+          `}
+        </div>
+      `;
+    }
+    
+    // === 顯示實體屬性 ===
+    function displayEntityProperties(entity) {
+      const propertyPanel = document.getElementById('property-panel');
+      const data = entity.userData;
       
       // 確保clusters屬性存在（向後兼容）
       if (!data.clusters) {
+        data.clusters = [];
+      }
+      
+      const objectTypes = ['wooden_box', 'bomb', 'stone'];
+      const typeNames = {
+        wooden_box: '木箱',
+        bomb: '炸彈',
+        stone: '石頭'
+      };
+      
+      // 生成種類選項
+      const typeOptions = objectTypes.map(type => 
+        `<option value="${type}" ${data.type === type ? 'selected' : ''}>${typeNames[type]}</option>`
+      ).join('');
+      
+      // 簡單的群組狀態顯示 - 加入生成狀態檢查
+      const clusterCount = data.clusters.length;
+      const generatedClusters = data.clusters.filter(cluster => cluster.generated);
+      const hasGeneratedClusters = generatedClusters.length > 0;
+      
+      let clusterStatus = '';
+      if (clusterCount === 0) {
+        clusterStatus = '暫無群組';
+      } else if (hasGeneratedClusters) {
+        clusterStatus = `${clusterCount}個群組 (已生成${generatedClusters.length}個)`;
+      } else {
+        clusterStatus = `${clusterCount}個群組 (預覽中)`;
+      }
+      
+      // 簡單的群組列表HTML
+      let clusterListHtml = '';
+      if (clusterCount > 0) {
+        clusterListHtml = data.clusters.map((cluster, index) => {
+          // 確保舊群組有默認參數
+          if (!cluster.count) cluster.count = 3;
+          if (!cluster.objectType) cluster.objectType = 'wooden_box';
+          if (!cluster.formation) cluster.formation = 'circle';
+          if (!cluster.radius) cluster.radius = 60; // 預設基於遊戲範圍
+          
+          return `<div class="cluster-item-expanded">
+            <div class="cluster-header">
+              <span class="cluster-name ${cluster.generated ? 'cluster-generated' : 'cluster-preview'}" onclick="selectClusterFromList(${index})" title="點擊選擇群組進行詳細編輯">
+                ${cluster.generated ? '✅' : '👁️'} ${cluster.name}
+              </span>
+              <button class="cluster-delete-btn" onclick="deleteCluster(${index})" title="${cluster.generated ? '已生成群組不可刪除' : '刪除群組'}" ${cluster.generated ? 'disabled' : ''}>×</button>
+            </div>
+            <div class="cluster-summary">
+              ${cluster.count}個${typeNames[cluster.objectType] || '物件'} · ${cluster.formation === 'circle' ? '圓形' : cluster.formation === 'line' ? '直線' : '方形'}陣型
+            </div>
+          </div>`;
+        }).join('');
+      } else {
+        clusterListHtml = '<p style="color: #a0aec0; font-size: 11px; margin: 10px 0; text-align: center;">點擊上方按鈕新增群組</p>';
+      }
+      
+      propertyPanel.innerHTML = `
+        <div class="property-group">
+          <h3>基本資訊</h3>
+          <div class="property-item">
+            <label class="property-label">名稱</label>
+            <input type="text" class="property-input" value="${data.name || data.type}" onchange="updateEntityName(this.value)" placeholder="輸入物件名稱">
+          </div>
+          <div class="property-item">
+            <label class="property-label">種類</label>
+            <select class="property-input" onchange="updateEntityType(this.value)">
+              ${typeOptions}
+            </select>
+          </div>
+        </div>
+        
+        <div class="property-group">
+          <h3>群組管理</h3>
+          <div class="property-item">
+            <label class="property-label">狀態</label>
+            <span class="cluster-status">${clusterStatus}</span>
+          </div>
+          <div class="cluster-controls">
+            <button class="cluster-add-btn" onclick="addSimpleCluster()">+ 新增群組</button>
+            ${hasGeneratedClusters ? '' : `<button class="cluster-generate-btn" onclick="generateAllClusters()">🎯 生成物件</button>`}
+          </div>
+          <div class="cluster-list">
+            ${clusterListHtml}
+          </div>
+        </div>
+      `;
+      
+      // 觸發群組可視化渲染
+      renderClusterVisuals(selectedEntity);
+    }
         data.clusters = [];
       }
       
@@ -1439,6 +1717,107 @@
       
       // 觸發群組可視化渲染
       renderClusterVisuals(selectedEntity);
+    }
+    
+    // === 群組屬性管理函數 ===
+    function selectOwnerEntity() {
+      if (selectedCluster) {
+        selectedCluster = null;
+        updatePropertyPanel();
+      }
+    }
+    
+    function selectClusterFromList(clusterIndex) {
+      if (!selectedEntity || !selectedEntity.userData.clusters[clusterIndex]) return;
+      
+      selectedCluster = {
+        ownerEntity: selectedEntity,
+        cluster: selectedEntity.userData.clusters[clusterIndex],
+        clusterIndex: clusterIndex
+      };
+      
+      updatePropertyPanel();
+      console.log(`已選擇群組: ${selectedCluster.cluster.name}`);
+    }
+    
+    function updateClusterProperty(property, value) {
+      if (!selectedCluster) return;
+      
+      const cluster = selectedCluster.cluster;
+      const oldValue = cluster[property];
+      
+      // 檢查是否已生成，已生成的群組不能修改
+      if (cluster.generated) {
+        console.warn(`已生成的群組無法修改屬性: ${cluster.name}`);
+        return;
+      }
+      
+      // 更新屬性值
+      cluster[property] = value;
+      
+      // 重新繪製群組可視化（只有預覽狀態的群組才會重繪）
+      renderClusterVisuals(selectedEntity);
+      
+      console.log(`群組 "${cluster.name}" 的 ${property} 已更新: ${oldValue} → ${value}`);
+    }
+    
+    function generateSingleCluster() {
+      if (!selectedCluster) return;
+      
+      const cluster = selectedCluster.cluster;
+      const clusterIndex = selectedCluster.clusterIndex;
+      
+      if (cluster.generated) {
+        console.warn(`群組 "${cluster.name}" 已經生成過了`);
+        return;
+      }
+      
+      console.log(`🎯 開始生成單個群組: ${cluster.name}`);
+      
+      const objectsCreated = generateClusterObjects(cluster, clusterIndex);
+      
+      if (objectsCreated > 0) {
+        // 標記群組為已生成
+        cluster.generated = true;
+        cluster.generatedAt = Date.now();
+        
+        // 清理預覽視覺
+        clearClusterVisuals();
+        
+        // 更新屬性面板和實體列表
+        updatePropertyPanel();
+        updateEntityList();
+        
+        console.log(`✅ 群組 "${cluster.name}" 已生成 ${objectsCreated} 個物件`);
+      }
+    }
+    
+    function deleteCurrentCluster() {
+      if (!selectedCluster) return;
+      
+      const cluster = selectedCluster.cluster;
+      const clusterIndex = selectedCluster.clusterIndex;
+      
+      if (cluster.generated) {
+        console.warn(`已生成的群組無法刪除: ${cluster.name}`);
+        return;
+      }
+      
+      const confirmMessage = `確定要刪除群組 "${cluster.name}" 嗎？`;
+      if (!confirm(confirmMessage)) {
+        return;
+      }
+      
+      // 從主物件的群組陣列中移除
+      selectedEntity.userData.clusters.splice(clusterIndex, 1);
+      
+      // 清除群組選擇狀態
+      selectedCluster = null;
+      
+      // 更新屬性面板顯示
+      updatePropertyPanel();
+      
+      console.log(`已刪除群組: ${cluster.name}`);
     }
     
     // === 更新實體位置 ===
