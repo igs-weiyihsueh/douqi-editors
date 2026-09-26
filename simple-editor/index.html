@@ -1512,8 +1512,125 @@
       rangeCircle.y = cluster.centerY;
       clusterGroup.addChild(rangeCircle);
       
+      // 3. 繪製陣型預覽
+      drawFormationPreview(clusterGroup, cluster);
+      
       // 添加到群組容器
       window.clusterContainer.addChild(clusterGroup);
+    }
+    
+    // === 陣型計算函數 ===
+    function calculateFormationPositions(centerX, centerY, count, formation, radius) {
+      const positions = [];
+      
+      switch (formation) {
+        case 'circle':
+          for (let i = 0; i < count; i++) {
+            const angle = (i / count) * Math.PI * 2;
+            const x = centerX + Math.cos(angle) * radius;
+            const y = centerY + Math.sin(angle) * radius;
+            positions.push({ x, y });
+          }
+          break;
+          
+        case 'line':
+          const spacing = radius * 1.5;
+          const totalWidth = (count - 1) * spacing;
+          const startX = centerX - totalWidth / 2;
+          for (let i = 0; i < count; i++) {
+            positions.push({
+              x: startX + i * spacing,
+              y: centerY
+            });
+          }
+          break;
+          
+        case 'square':
+          const side = Math.ceil(Math.sqrt(count));
+          const squareSpacing = radius * 1.2;
+          const squareWidth = (side - 1) * squareSpacing;
+          const squareStartX = centerX - squareWidth / 2;
+          const squareStartY = centerY - squareWidth / 2;
+          
+          for (let i = 0; i < count; i++) {
+            const row = Math.floor(i / side);
+            const col = i % side;
+            positions.push({
+              x: squareStartX + col * squareSpacing,
+              y: squareStartY + row * squareSpacing
+            });
+          }
+          break;
+      }
+      
+      return positions;
+    }
+    
+    function drawFormationPreview(container, cluster) {
+      // 計算陣型位置
+      const positions = calculateFormationPositions(
+        cluster.centerX, 
+        cluster.centerY, 
+        cluster.count, 
+        cluster.formation, 
+        cluster.radius
+      );
+      
+      // 獲取物件類型配置
+      const gameObjectTypes = {
+        wooden_box: { label: '木', color: 0x8B4513, shape: 'square', size: 16 },
+        bomb: { label: '爆', color: 0xFF4444, shape: 'circle', size: 13 },
+        stone: { label: '石', color: 0x808080, shape: 'hexagon', size: 16 }
+      };
+      
+      const config = gameObjectTypes[cluster.objectType] || gameObjectTypes.wooden_box;
+      
+      // 為每個位置繪製物件預覽
+      positions.forEach((pos, index) => {
+        const preview = new PIXI.Graphics();
+        
+        // 半透明預覽
+        const alpha = 0.4;
+        
+        if (config.shape === 'square') {
+          const size = config.size / 2;
+          preview.rect(-size, -size, config.size, config.size);
+          preview.fill({ color: config.color, alpha });
+          preview.stroke({ width: 1, color: config.color, alpha: alpha + 0.2 });
+        } else if (config.shape === 'circle') {
+          preview.circle(0, 0, config.size / 2);
+          preview.fill({ color: config.color, alpha });
+          preview.stroke({ width: 1, color: config.color, alpha: alpha + 0.2 });
+        } else if (config.shape === 'hexagon') {
+          // 簡化為六角形
+          const size = config.size / 2;
+          const points = [];
+          for (let i = 0; i < 6; i++) {
+            const angle = (i / 6) * Math.PI * 2;
+            points.push(
+              Math.cos(angle) * size,
+              Math.sin(angle) * size
+            );
+          }
+          preview.poly(points);
+          preview.fill({ color: config.color, alpha });
+          preview.stroke({ width: 1, color: config.color, alpha: alpha + 0.2 });
+        }
+        
+        preview.x = pos.x;
+        preview.y = pos.y;
+        
+        container.addChild(preview);
+        
+        // 4. 繪製連接線 (從中心點到每個預覽物件)
+        if (index < positions.length) {
+          const line = new PIXI.Graphics();
+          line.moveTo(cluster.centerX, cluster.centerY);
+          line.lineTo(pos.x, pos.y);
+          line.stroke({ width: 1, color: 0x00ff00, alpha: 0.2 });
+          container.addChild(line);
+        }
+      });
     }
     
     // === 更新實體列表 ===
