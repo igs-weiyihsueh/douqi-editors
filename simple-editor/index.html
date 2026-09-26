@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>簡潔關卡編輯器 - v6.0-clean</title>
+  <title>簡潔關卡編輯器 - v6.1-coordinate-fix</title>
   <style>
     * {
       margin: 0;
@@ -1529,14 +1529,14 @@
       centerPoint.buttonMode = true;
       centerPoint.cursor = 'move';
       
-      // 群組中心點擊事件 - 完全複製主物件的pointerdown邏輯
+      // 群組中心點擊事件 - 修正座標系轉換問題
       centerPoint.on('pointerdown', (event) => {
         // 選擇當前實體（如果需要的話）
         selectEntityObject(selectedEntity);
         
-        // 準備拖拽狀態 - 與主物件完全相同
+        // 準備拖拽狀態 - 使用與主物件相同的座標系
         const globalPos = event.data.global;
-        const localPos = centerPoint.parent.toLocal(globalPos);
+        const localPos = container.toLocal(globalPos); // 修正：使用container作為座標基準
         
         // 清除可能存在的主物件拖拽狀態（避免衝突）
         if (globalDragState.dragEntity) {
