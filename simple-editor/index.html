@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>簡潔關卡編輯器 - v8.4-corrected</title>
+  <title>簡潔關卡編輯器 - v8.5-nav</title>
   <style>
     * {
       margin: 0;
@@ -534,6 +534,15 @@
     
     .property-button.danger:hover {
       background: #c53030;
+    }
+    
+    .property-button.secondary {
+      background: #718096;
+      color: white;
+    }
+    
+    .property-button.secondary:hover {
+      background: #4a5568;
     }
     
     .cluster-list {
@@ -1471,7 +1480,7 @@
         
         <div class="property-group">
           <h3>群組操作</h3>
-          <button class="property-button danger" onclick="deleteCurrentCluster()" style="margin-top: 8px;">🗑️ 刪除群組</button>
+          <button class="property-button secondary" onclick="selectOwnerEntity()" style="margin-top: 8px;">← 返回</button>
         </div>
       `;
     }
