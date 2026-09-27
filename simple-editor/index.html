@@ -659,6 +659,17 @@
     
     <div class="toolbar-group">
       <label>關卡:</label>
+      <select id="level-select" onchange="selectLevel()" class="secondary">
+        <option value="">選擇關卡...</option>
+        <option value="level1">關卡 1：新手村</option>
+        <option value="level2">關卡 2：森林</option>
+        <option value="level3">關卡 3：沙漠</option>
+        <option value="level4">關卡 4：火山 (BOSS)</option>
+        <option value="level5">關卡 5：雪山</option>
+        <option value="level6">關卡 6：海底</option>
+        <option value="level7">關卡 7：城堡</option>
+        <option value="level8">關卡 8：天空</option>
+      </select>
       <button onclick="clearLevel()" class="secondary">清除關卡</button>
     </div>
     
@@ -666,12 +677,7 @@
       <label>檔案:</label>
       <button onclick="exportLevel()">匯出關卡</button>
       <button onclick="importLevel()" class="secondary">匯入關卡</button>
-      <select id="level-select" onchange="selectLevel()" class="secondary">
-        <option value="">選擇關卡...</option>
-        <option value="test_level">測試關卡</option>
-        <option value="level_1">關卡 1</option>
-        <option value="level_2">關卡 2</option>
-      </select>
+      <span id="filename-display" style="margin-left: 10px; font-size: 12px; color: #a0aec0; font-family: monospace;">level1_001.json</span>
     </div>
     
     <div class="toolbar-group">
@@ -835,6 +841,9 @@
       console.log('群組預設範圍: 60px (基於攻擊範圍44px + 安全間距)');
       console.log('========================');
       console.log('網格和邊界預設顯示');
+      
+      // 初始化檔案名稱顯示
+      updateFileNameDisplay();
     }
     
     // === 創建關卡邊界顯示 ===
@@ -982,11 +991,34 @@
       console.log(`已生成 ${config.name} 於 (${offsetX.toFixed(0)}, ${offsetY.toFixed(0)})`);
     }
     
+    // === 自動命名系統 ===
+    function generateFileName(levelId) {
+      // 檢查現有檔案並生成下一個可用編號
+      // 格式：level{levelId}_{編號}.json
+      // 這裡簡化為基礎編號，實際專案可以連接後端檢查
+      const baseNumber = '001';
+      return `level${levelId}_${baseNumber}`;
+    }
+    
     // === 匯出關卡 ===
     function exportLevel() {
+      const levelSelect = document.getElementById('level-select');
+      const selectedLevel = levelSelect.value;
+      
+      let fileName = 'level_export';
+      let levelName = '編輯器關卡';
+      
+      // 如果有選擇關卡，使用自動命名
+      if (selectedLevel) {
+        const levelId = selectedLevel.replace('level', '');
+        fileName = generateFileName(levelId);
+        levelName = levelSelect.options[levelSelect.selectedIndex].text;
+      }
+      
       const levelData = {
-        name: "編輯器關卡",
+        name: levelName,
         version: "1.0",
+        levelId: selectedLevel || 'custom',
         entities: entities.map(entity => ({
           type: entity.userData.type,
           position: [entity.x / 50, 0, entity.y / 50], // 轉換回3D座標
@@ -1000,7 +1032,7 @@
       
       const link = document.createElement('a');
       link.href = URL.createObjectURL(dataBlob);
-      link.download = 'level_export.json';
+      link.download = `${fileName}.json`;
       link.click();
       
       console.log('關卡已匯出:', levelData);
@@ -1029,6 +1061,21 @@
       reader.readAsText(file);
     }
     
+    // === 更新檔案名稱顯示 ===
+    function updateFileNameDisplay() {
+      const levelSelect = document.getElementById('level-select');
+      const filenameDisplay = document.getElementById('filename-display');
+      const selectedLevel = levelSelect.value;
+      
+      if (selectedLevel) {
+        const levelId = selectedLevel.replace('level', '');
+        const fileName = generateFileName(levelId);
+        filenameDisplay.textContent = `${fileName}.json`;
+      } else {
+        filenameDisplay.textContent = 'level1_001.json';
+      }
+    }
+    
     // === 選擇預設關卡 ===
     function selectLevel() {
       const select = document.getElementById('level-select');
@@ -1036,14 +1083,92 @@
       
       if (!levelName) return;
       
-      if (levelName === 'test_level') {
-        loadTestLevel();
-      } else {
-        alert(`關卡 "${levelName}" 尚未實現`);
-      }
+      // 更新檔案名稱顯示
+      updateFileNameDisplay();
       
-      // 重置選擇
-      select.value = '';
+      // 更新標題顯示當前關卡
+      const toolbar = document.querySelector('.toolbar h1');
+      const levelText = select.options[select.selectedIndex].text;
+      toolbar.textContent = `鬥氣割草 - ${levelText}`;
+      
+      // 載入對應關卡的預設布置（如果有的話）
+      switch(levelName) {
+        case 'level1':
+          loadLevel1Template();
+          break;
+        case 'level2':
+          loadLevel2Template();
+          break;
+        case 'level3':
+          loadLevel3Template();
+          break;
+        case 'level4':
+          loadLevel4Template(); // BOSS關卡
+          break;
+        case 'level5':
+          loadLevel5Template();
+          break;
+        case 'level6':
+          loadLevel6Template();
+          break;
+        case 'level7':
+          loadLevel7Template();
+          break;
+        case 'level8':
+          loadLevel8Template();
+          break;
+        default:
+          console.log(`關卡 "${levelName}" 已選擇，可開始編輯`);
+      }
+    }
+    
+    // === 關卡模板函數 ===
+    function loadLevel1Template() {
+      clearLevel();
+      // 新手村預設布置 - 簡單的教學布局
+      console.log('載入關卡1：新手村模板');
+    }
+    
+    function loadLevel2Template() {
+      clearLevel();
+      // 森林預設布置
+      console.log('載入關卡2：森林模板');
+    }
+    
+    function loadLevel3Template() {
+      clearLevel();
+      // 沙漠預設布置
+      console.log('載入關卡3：沙漠模板');
+    }
+    
+    function loadLevel4Template() {
+      clearLevel();
+      // 火山BOSS戰預設布置
+      console.log('載入關卡4：火山BOSS模板');
+    }
+    
+    function loadLevel5Template() {
+      clearLevel();
+      // 雪山預設布置
+      console.log('載入關卡5：雪山模板');
+    }
+    
+    function loadLevel6Template() {
+      clearLevel();
+      // 海底預設布置
+      console.log('載入關卡6：海底模板');
+    }
+    
+    function loadLevel7Template() {
+      clearLevel();
+      // 城堡預設布置
+      console.log('載入關卡7：城堡模板');
+    }
+    
+    function loadLevel8Template() {
+      clearLevel();
+      // 天空預設布置
+      console.log('載入關卡8：天空模板');
     }
     
     // === 載入關卡數據 ===
